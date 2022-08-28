@@ -19,6 +19,7 @@ description = """Wow I'm a description!"""
 
 intents = disnake.Intents.default()
 intents.members = True
+intents.message_content = True
 
 #Define the bot
 bot = commands.InteractionBot(
