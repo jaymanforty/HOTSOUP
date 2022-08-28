@@ -56,8 +56,9 @@ class ChatbotCog(commands.Cog):
             print("cost ~ ¢", estimated_cost)
             await msg.reply(response_text)
 
+    @commands.is_owner()
     @commands.slash_command()
-    async def openai(
+    async def say(
         self,
         ctx: disnake.ApplicationCommandInteraction,
         message: str):
@@ -71,17 +72,13 @@ class ChatbotCog(commands.Cog):
             The message to send to the all powerful
         """
 
-        if len(message) > 100:
-            await ctx.send(embed=disnake.Embed(description="Only a max of 100 characters in your message is allowed"), ephemeral=True)
-            return 
-
         await ctx.response.defer()
 
         r = openai.Completion.create(
             model="text-davinci-002",
             prompt=message,
-            max_tokens = 75,
-            temperature = 0.7
+            max_tokens = 100,
+            temperature = 0.9
         )
 
         response_text = r['choices'][0]['text']
