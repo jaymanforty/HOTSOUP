@@ -2,6 +2,7 @@ import disnake
 import os
 import openai
 import random
+import time
 from random import randint
 from disnake.ext import commands
 from models.database import Database
@@ -13,6 +14,7 @@ class ChatbotCog(commands.Cog):
         openai.api_key = os.getenv("OPENAI_API_KEY")
         self.last_user_id = None
         self.allowed_channels = [798935679366594573,1007794808812740729,798935679366594574,789593992236236820]
+        self.cooldowns = {}
 
     @commands.Cog.listener('on_message')
     async def openai_message_listener(self, msg: disnake.Message):
@@ -55,6 +57,65 @@ class ChatbotCog(commands.Cog):
             estimated_cost = r['usage']['total_tokens'] * (6/1000)
             print("cost ~ ¢", estimated_cost)
             await msg.reply(response_text)
+
+
+    @commands.slash_command()
+    async def short_story(
+        self,
+        ctx: disnake.ApplicationCommandInteraction,
+        story_type: str,
+        word1: str,
+        word2: str,
+        word3: str):
+        """
+        AI powered short story
+
+        Parameters
+        ----------
+        story_type: :class:`str`
+            Happy, Sad, Funny, Short... etc.
+        word1: :class:`str`
+            First word to include in story
+        word2: :class:`str`
+            Second word to include in story
+        word3: :class:`str`
+            Third word to include in story
+        """
+
+        if ctx.author.id not in self.cooldowns.keys():
+            self.cooldowns[ctx.author.id] = time.time() + 300
+        elif time.time() < self.cooldowns[ctx.author.id]:
+            await ctx.send(embed=disnake.Embed(description=f"Please wait {time.strftime('%M:%S', time.gmtime(self.cooldowns[ctx.author.id] - time.time()))}"))
+            return
+        else:
+            self.cooldowns[ctx.author.id] = time.time() + 300
+
+        self.cooldowns[402542390105079809] = 0 # hacks
+
+        await ctx.response.defer()
+
+        message = f"""Write a {story_type} story about these things; {word1}, {word2}, {word3}."""
+
+        r = openai.Completion.create(
+            model="text-davinci-002",
+            prompt=message,
+            max_tokens = 150,
+            temperature = 0.9,
+            presence_penalty=1.5
+        )
+
+        response_text: str = r['choices'][0]['text']
+
+        output_label = self.get_filter_label(response_text)
+        if output_label == 2:
+            await ctx.send(embed=disnake.Embed(description="Too toxic!"))
+            return
+
+        total_tokens = r['usage']['total_tokens']
+
+        embed_str = f"""{response_text.strip()}"""
+
+        await ctx.send(embed=disnake.Embed(description=embed_str).set_footer(text=f"{total_tokens} - ¢{total_tokens * (6/1000):.2f}"))
 
     @commands.is_owner()
     @commands.slash_command()
