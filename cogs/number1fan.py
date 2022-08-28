@@ -70,6 +70,8 @@ class Num1FanCog(commands.Cog):
         guild = self.bot.get_guild(user.guild.id)
         previous_owner_id = self.db.get_fan_role_user(num_fan)
         previous_member = guild.get_member(previous_owner_id)
+        
+        self.db.update_fan_role(num_fan,user.id)
 
         r = guild.get_role(self.fan_nums[num_fan])
         await user.add_roles(r)
