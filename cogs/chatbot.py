@@ -99,7 +99,7 @@ class ChatbotCog(commands.Cog):
         r = openai.Completion.create(
             model="text-davinci-002",
             prompt=message,
-            max_tokens = 150,
+            max_tokens = 250,
             temperature = 0.9,
             presence_penalty=1.5
         )
