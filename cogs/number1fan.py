@@ -19,7 +19,7 @@ class Num1FanCog(commands.Cog):
         ctx: disnake.ApplicationCommandInteraction,
         guess: int):
         """
-        Try to be the HOTSOUP! #1 Fan by guessing a number out of 1000.
+        Try to be the HOTSOUP! #1 Fan by guessing a number out of 500.
         If your guess is within 100 = #3 fan, 50 = #2 fan, 0 = #1 fan
 
         Parameters
@@ -28,13 +28,13 @@ class Num1FanCog(commands.Cog):
             The number you want to guess with 
         """
 
-        if guess < 1 or guess > 1000:
-            await ctx.send(embed=disnake.Embed(description="The number can only be [1 -> 1000] "), ephemeral=True)
+        if guess < 1 or guess > 500:
+            await ctx.send(embed=disnake.Embed(description="The number can only be [1 -> 500] "), ephemeral=True)
             return
         
         self.db.init_user_guesses(ctx.author.id)
 
-        magic_num = randint(1,1000)
+        magic_num = randint(1,500)
         num_guesses = self.db.get_num_guesses(ctx.author.id) + 1
 
         self.db.update_user_guesses(ctx.author.id, num_guesses)
@@ -44,19 +44,19 @@ class Num1FanCog(commands.Cog):
             await self.bot.get_channel(ctx.channel_id).send("nice")
 
         # assign #1 role
-        if abs(guess - magic_num) == 0:    # 1/1000   = 0.1%
+        if abs(guess - magic_num) == 0:    # 1/500   = 0.2%
             await self.update_user_role(ctx.author, 1)
             await ctx.send(embed=disnake.Embed(description=f"{ctx.author.mention} has become **#1** HOTSOUP! Fan.\nTotal Guesses: {num_guesses}"))
             return
 
         # assign #2 role
-        elif abs(guess - magic_num) < 51:  # 100/1000 = 10%
+        elif abs(guess - magic_num) < 51:  # 100/500 = 20%
             await self.update_user_role(ctx.author, 2)
             await ctx.send(embed=disnake.Embed(description=f"{ctx.author.mention} has become **#2** HOTSOUP! Fan.\nTotal Guesses: {num_guesses}"))
             return
 
         # assign #3 role
-        elif abs(guess - magic_num) < 101: # 200/1000 = 20%
+        elif abs(guess - magic_num) < 101: # 200/500 = 40%
             await self.update_user_role(ctx.author, 3)
             await ctx.send(embed=disnake.Embed(description=f"{ctx.author.mention} has become **#3** HOTSOUP! Fan.\nTotal Guesses: {num_guesses}"))
             return
@@ -70,12 +70,13 @@ class Num1FanCog(commands.Cog):
         guild = self.bot.get_guild(user.guild.id)
         previous_owner_id = self.db.get_fan_role_user(num_fan)
         previous_member = guild.get_member(previous_owner_id)
-        if not previous_member: return
-        
-        r = guild.get_role(self.fan_nums[num_fan])
 
-        await previous_member.remove_roles(r)
+        r = guild.get_role(self.fan_nums[num_fan])
         await user.add_roles(r)
+
+        if not previous_member: return
+        await previous_member.remove_roles(r)
+        
 
 def setup(bot):
     bot.add_cog(Num1FanCog(bot))

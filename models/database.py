@@ -22,6 +22,12 @@ class Database:
 
 
     ### Role guessing ###
+    def update_fan_role(self, num_fan, user_id):
+        """ Updates owner of the roles """
+        self.cursor.execute(""" UPDATE FanRoles SET UserId = ? WHERE FanNumber = ?""",(user_id,num_fan))
+        self.connection.commit()
+        return
+        
     def update_user_guesses(self, user_id, num_guesses):
         self.cursor.execute(""" UPDATE Guesses SET NumGuesses = ? WHERE UserId = ? """, (num_guesses, user_id))
         self.connection.commit()
