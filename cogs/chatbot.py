@@ -34,7 +34,7 @@ class ChatbotCog(commands.Cog):
         prompt = f"""
         The following is a conversation between two people. The other person is {','.join(random.sample(traits,k=3))}.
         {msg.author.display_name}: What do you do?
-        Person#2: I reply to people.
+        Person#2: I reply with snarky comments to messages.
         {msg.author.display_name}: {msg.content}
         Person#2:
         """
@@ -138,7 +138,7 @@ class ChatbotCog(commands.Cog):
         r = openai.Completion.create(
             model="text-davinci-002",
             prompt=message,
-            max_tokens = 100,
+            max_tokens = 1000,
             temperature = 0.9
         )
 
