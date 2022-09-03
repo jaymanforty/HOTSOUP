@@ -72,10 +72,12 @@ class Num1FanCog(commands.Cog):
         previous_member = guild.get_member(previous_owner_id)
         
         self.db.update_fan_role(num_fan,user.id)
-
-        if not previous_member: return
-        
         r = guild.get_role(self.fan_nums[num_fan])
+
+        if not previous_member: 
+            await user.add_roles(r)
+            return
+        
         await previous_member.remove_roles(r)
         await user.add_roles(r)
 
