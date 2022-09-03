@@ -5,3 +5,5 @@ venv
 .env
 **/cfg
 db.db
+.png
+.ttf
