@@ -17,10 +17,64 @@ class ChatbotCog(commands.Cog):
         self.cooldowns = {}
 
     @commands.Cog.listener('on_message')
+    async def openai_question(
+        self,
+        message: disnake.Message) -> None:
+
+        if message.author.id == self.bot.user.id: return
+        if not message.content.endswith("?"): return
+        if message.channel.id not in self.allowed_channels: return
+
+        try:
+            if self.cooldowns["question"] > time.time(): return
+            self.cooldowns["question"] = time.time() + 600
+        except KeyError:
+            self.cooldowns["question"] = time.time() + 600
+
+        prompt = f"""
+        Marv is a quizbot that asks questions and you reluctantly respond with a sarcastic answer:
+
+        Marv: How many pounds are in a kilogram? 
+        You: There are 2.2 pounds in a kilogram. This again? Try to be more original...
+        Marv: What does HTML stand for? 
+        You: Hypertext Markup Language. Was Google too busy? The T is for try to ask better questions in the future.
+        Marv: When did the first airplane fly? 
+        You: On December 17, 1903, Wilbur and Orville Wright made the first flights. I wish they’d come and take me away.
+        Marv: What is the meaning of life?
+        You: Do you think I'm a bank of knowledge? Ask your friend Google!
+        Marv: What time is it?
+        You: Time for you to start asking better questions.
+        Marv: Where you going to be at 10pm?
+        You: Ok now you are starting to sound like my ex-girlfriend.
+        Marv: {message.content}
+        You:
+        """
+
+        if randint(1,2) == 1:
+            r = openai.Completion.create(
+            model="text-davinci-002",
+            prompt=prompt,
+            max_tokens = 150,
+            temperature = random.random()
+            )
+
+            response_text = r['choices'][0]['text'].strip()
+
+            output_label = self.get_filter_label(response_text)
+            if output_label == 2: 
+                print("Prompt was too toxic")
+                return
+
+            estimated_cost = r['usage']['total_tokens'] * (4/1000)
+            print("cost ~ ¢", estimated_cost)
+            await message.reply(f"{response_text}")
+    
+    @commands.Cog.listener('on_message')
     async def openai_message_listener(self, msg: disnake.Message):
         
         if msg.channel.id not in self.allowed_channels: return
         if msg.author.id == self.bot.user.id: return
+        if "?" in msg.content: return
         if self.last_user_id == msg.author.id: return #avoids users spamming messages to get a response
 
         restrictions = ['https','http','<','>'] #so anything that mentions channels, has links, or has emojis wont get sent to api
@@ -34,7 +88,7 @@ class ChatbotCog(commands.Cog):
         prompt = f"""
         The following is a conversation between two people. The other person is {','.join(random.sample(traits,k=3))}.
         {msg.author.display_name}: What do you do?
-        Person#2: I reply with snarky comments to messages.
+        Person#2: I reply with comments to messages.
         {msg.author.display_name}: {msg.content}
         Person#2:
         """
@@ -54,7 +108,7 @@ class ChatbotCog(commands.Cog):
                 print("Prompt was too toxic")
                 return
 
-            estimated_cost = r['usage']['total_tokens'] * (6/1000)
+            estimated_cost = r['usage']['total_tokens'] * (4/1000)
             print("cost ~ ¢", estimated_cost)
             await msg.reply(response_text)
 
@@ -115,7 +169,7 @@ class ChatbotCog(commands.Cog):
 
         embed_str = f"""{response_text.strip()}"""
 
-        await ctx.send(embed=disnake.Embed(description=embed_str).set_footer(text=f"{total_tokens} - ¢{total_tokens * (6/1000):.2f}"))
+        await ctx.send(embed=disnake.Embed(description=embed_str).set_footer(text=f"{total_tokens} - ¢{total_tokens * (4/1000):.2f}"))
 
     @commands.is_owner()
     @commands.slash_command()
@@ -149,7 +203,7 @@ class ChatbotCog(commands.Cog):
             await ctx.send(embed=disnake.Embed(description="Too toxic!"))
             return
 
-        estimated_cost = r['usage']['total_tokens'] * (6/1000)
+        estimated_cost = r['usage']['total_tokens'] * (4/1000)
         embed_str = f"""
         {ctx.author.mention} - {message}
 

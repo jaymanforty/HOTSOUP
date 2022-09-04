@@ -45,7 +45,7 @@ async def on_slash_command_error(ctx:disnake.ApplicationCommandInteraction, erro
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send(embed=disnake.Embed(description="You are not allowed to use this"), ephemeral=True)
     else:
-        await ctx.send(error)
+        await ctx.channel.send(error)
         logging.error(f"Unhandled Exception from command: {ctx.application_command}", exc_info=error)
 
 

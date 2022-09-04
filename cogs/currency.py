@@ -7,7 +7,8 @@ from disnake.ext import commands, tasks
 from models.database import Database
 
 HS_ALLOWED_CHANNELS = [1007794808812740729,798935679366594573]
-HS_EMOJI_ID = 799461124248436818
+#HS_EMOJI_ID = 799461124248436818
+HS_EMOJI_ID = 1015513642478870558
 class CurrencyCog(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot: commands.InteractionBot = bot
@@ -70,7 +71,7 @@ class CurrencyCog(commands.Cog):
         amount: int,
         multiplier: int = 2) -> None:
         """
-        Gamble some HS! points to win big! Odds are 1/(multiplier*2)
+        Gamble some HS! points to win big! Odds are 1/(multiplier*2)...default is (1/4)
 
         Parameters
         ----------
@@ -79,7 +80,7 @@ class CurrencyCog(commands.Cog):
         multiplier: :class:`int`
             (amount * mult) is your reward. Higher the multiplier the less odds!
         """
-        if multiplier == 1:
+        if multiplier < 2:
             await ctx.send(embed=Embed(description="To gamble you need a multiplier of at least 2!"), ephemeral=True)
             return
 
@@ -118,8 +119,42 @@ class CurrencyCog(commands.Cog):
             self.db.hs_sub_points(ctx.author.id,points)
             await ctx.send(embed=Embed(description=f"{ctx.author.mention} took a chance and lost {self.HS_EMOJI}**{points}** :("))
 
+        
+    @commands.slash_command()
+    async def hs_dice(
+        self,
+        ctx: disnake.ApplicationCommandInteraction,
+        amount: int,
+        guess: commands.Range[1,6]) -> None:
+        """
+        Rolls 6 dice. Payout = dice*bet
+
+        Parameters
+        ----------
+        amount: :class:`int`
+            The amount of HS! points to bet
+        guess: :class:`int`
+            The number to guess
+        """
+
+        if not await self.hs_sub_points(ctx, amount): return            
+
+        rolls = [str(self.roll_dice()) for x in range(6)]
+
+        payout = rolls.count(str(guess))*amount
+        points = self.db.hs_add_points(ctx.author.id, payout)
+
+        if payout > 0:
+            await ctx.send(embed=disnake.Embed(description=f"You bet **{amount}**\nYou guess **{guess}**.\nYou rolled {','.join(rolls)}\n\nYou win {self.HS_EMOJI}**{payout}**! ({self.HS_EMOJI}{points})"))
+        else:
+            await ctx.send(embed=disnake.Embed(description=f"You bet **{amount}**\nYou guess **{guess}**.\nYou rolled {','.join(rolls)}\n\nYou gambled away {self.HS_EMOJI}**{amount}**... ({self.HS_EMOJI}{points})"))
+
+
   
     ### UTIL ###
+    
+    def roll_dice(self):
+        return rnd.randint(1,6)
 
     async def start_random_message_sender(self) -> None:
         """ After X amount of time send a random message that the user can react on to get HS! points """
