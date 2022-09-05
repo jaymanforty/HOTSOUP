@@ -13,6 +13,7 @@ class CurrencyCog(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot: commands.InteractionBot = bot
         self.db = Database()
+        self.last_person_broke = None
         self.start_hs_random_message_task.start()
 
     @tasks.loop(count=1)
@@ -60,8 +61,14 @@ class CurrencyCog(commands.Cog):
         if self.db.hs_get_points(ctx.author.id) > 0: 
             await ctx.send(embed=Embed(description="You aren't broke yet!"),ephemeral=True)
             return
-        self.db.hs_add_points(ctx.author.id, 5)
-        await self.hs_points(ctx)
+
+        if self.last_person_broke == ctx.author:
+            await ctx.send(embed=disnake.Embed(description=f"One of those days... take +{self.HS_EMOJI}10"),ephemeral=True)
+            self.db.hs_add_points(ctx.author.id, 20)
+        else:
+            self.last_person_broke = ctx.author
+            self.db.hs_add_points(ctx.author.id, 10)
+            await self.hs_points(ctx)
 
 
     @commands.slash_command()
