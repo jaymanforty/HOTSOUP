@@ -25,7 +25,7 @@ class ChatbotCog(commands.Cog):
         Listens for reactions that have cringe in the name to double on the cringiness
         """
         if "cringe" in reaction.emoji.name.lower():
-            reaction.message.add_reaction(reaction.emoji)
+            await reaction.message.add_reaction(reaction.emoji)
         
     @commands.Cog.listener('on_message')
     async def openai_question(
