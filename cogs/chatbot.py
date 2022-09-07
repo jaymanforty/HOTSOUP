@@ -16,7 +16,7 @@ class ChatbotCog(commands.Cog):
         self.allowed_channels = [798935679366594573,1007794808812740729,798935679366594574,789593992236236820]
         self.cooldowns = {}
 
-    @commands.Cog.listener('on_reaction')
+    @commands.Cog.listener('on_reaction_add')
     async def cringe_react(
         self,
         reaction: disnake.Reaction,
