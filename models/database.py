@@ -21,6 +21,18 @@ class Database:
         self.cursor = Database.cursor
 
     ### HOTSOUP! POINTS ###
+
+    def hs_update_lotto_jackpot(self, amount) -> int:
+        """ Updates the current HS! points lottery. Returns the amount that was updated to """
+        self.cursor.execute(""" UPDATE HSLottery SET TotalPoints = ? """, (amount,))
+        self.connection.commit()
+        return amount
+
+    def hs_get_lotto_jackpot(self) -> int:
+        """ Gets the current jackpot for lottery """
+        jackpot = self.cursor.execute(""" SELECT TotalPoints FROM HSLottery """).fetchone()
+        return jackpot[0] if jackpot else None
+
     def hs_get_all(self) -> list:
         """ Get all users with HS! points """
         users = self.cursor.execute(""" SELECT * FROM HSPoints""").fetchall()

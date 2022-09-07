@@ -15,6 +15,7 @@ class CurrencyCog(commands.Cog):
         self.db = Database()
         self.last_person_broke = None
         self.start_hs_random_message_task.start()
+        self.cooldowns = {}
 
     @tasks.loop(count=1)
     async def start_hs_random_message_task(self) -> None:
@@ -156,8 +157,118 @@ class CurrencyCog(commands.Cog):
         else:
             await ctx.send(embed=disnake.Embed(description=f"You bet **{amount}**\nYou guess **{guess}**.\nYou rolled {','.join(rolls)}\n\nYou gambled away {self.HS_EMOJI}**{amount}**... ({self.HS_EMOJI}{points})"))
 
+    @commands.slash_command()
+    async def hs_lottery_info(
+        self,
+        ctx: disnake.ApplicationCommandInteraction) -> None:
+        """
+        Info about HS! Lottery minigame
+        """
 
-  
+        info = f"""
+        Current Jackpot: {self.HS_EMOJI}{self.db.hs_get_lotto_jackpot()}
+        Costs 5 HS! points to play.
+
+        The bot then simulates a lottery ticket and the winning numbers. 
+        Payout is a percentage of the jackpot determined on how many numbers match.
+        Regular numbers are picked [1,15] and the special number is picked [1,5]
+
+        Matches = (Regular Number, Special Number) -> (5,1) is jackpot
+
+        Result - payout - odds
+        (0,1)  - 0.01%   - 1 in 5
+        (1,1)  - 0.2%   - 1 in 75
+        (2,1)  - 0.8%   - 1 in 455
+        (3,0)  - 1.0%   - 1 in 525
+        (4,0)  - 1.5%   - 1 in 1,365
+        (3,1)  - 3.0%  - 1 in 2,275
+        (5,0)  - 5.0%  - 1 in 3,003
+        (4,1)  - 10.0%  - 1 in 6,825
+        (5,1)  - 100.%  - 1 in 15,015
+
+        Jackpot is increased by 1% everytime someone plays. 
+        """
+        await ctx.send(embed=Embed(description=info))
+
+    @commands.slash_command()
+    async def hs_lottery(
+        self,
+        ctx: disnake.ApplicationCommandInteraction) -> None:
+        """
+        Simulate a lottery ticket, costs 5 HS! points. Entries add 100 to jackpot
+        """
+
+        await ctx.response.defer()
+
+        jackpot = self.db.hs_get_lotto_jackpot()
+        if not jackpot:
+            await ctx.send("No jackpot set yet")
+            return
+
+        if not await self.hs_sub_points(ctx, 5): return         
+
+        lotto_range = range(1,16)
+        ball_range = range(1,6)
+
+        user_numbers = sorted(rnd.sample(lotto_range,5))
+        user_ball = rnd.choice(ball_range)
+        lotto_numbers = sorted(rnd.sample(lotto_range,5))
+        lotto_ball = rnd.choice(ball_range)
+        white_matches = len(set(user_numbers).intersection(set(lotto_numbers)))
+        ball_match = 1 if lotto_ball == user_ball else 0
+
+        winning_tuple = (white_matches, ball_match)
+        payout = 0
+
+        # 1 ball (1/5)
+        if winning_tuple == (0,1):
+            payout = round(jackpot*0.0001)
+        # 1 num and 1 ball (1/75)
+        elif winning_tuple == (1,1):
+            payout = round(jackpot*0.002)
+        # 3 num (1/455)
+        elif winning_tuple == (3,0):
+            payout = round(jackpot*0.008)
+        # 2 num and 1 ball (1/525)
+        elif winning_tuple == (2,1):
+            payout = round(jackpot*0.01)
+        # 4 num (1/1,365)
+        elif winning_tuple == (4,0):
+            payout = round(jackpot*0.015)
+        # 3 num and 1 ball (1/2,275)
+        elif winning_tuple == (3,1):
+            payout = round(jackpot*0.03)
+        # 5 num (1/3,003)
+        elif winning_tuple == (5,0):
+            payout = round(jackpot*0.05)
+        # 4 num and 1 ball (1/6,825)
+        elif winning_tuple == (4,1):
+            payout = round(jackpot*0.10)
+        # jackpot (1/15,015)
+        elif winning_tuple == (5,1):
+            payout = jackpot
+        
+        points = self.db.hs_add_points(ctx.author.id, payout)
+        master_str = f"""
+        You: **{",".join([str(x) for x in user_numbers])}** [**{user_ball}**]
+        Lottery: **{",".join([str(x) for x in lotto_numbers])}** [**{lotto_ball}**]
+        Matches: {winning_tuple}
+
+        You win:{self.HS_EMOJI}**{payout}**\t({self.HS_EMOJI}{points})
+        """
+        # hit jackpot
+        if payout == jackpot:
+            self.db.hs_update_lotto_jackpot(5000)
+            await ctx.edit_original_message(embed=Embed(description=master_str+f"\n\nYOU HIT THE JACKPOT OF {self.HS_EMOJI}**{payout}**!!!! ({self.HS_EMOJI}{points})"))
+            return
+
+        jackpot -= payout
+        jackpot = round((jackpot*1.01))
+        self.db.hs_update_lotto_jackpot(jackpot)
+        master_str += f"\nJackpot is now {self.HS_EMOJI}**{jackpot}**"
+        await ctx.edit_original_message(embed=Embed(description=master_str))
+        
+
     ### UTIL ###
     
     def roll_dice(self):
