@@ -7,3 +7,4 @@ venv
 db.db
 **.png
 **.ttf
+secret.key
