@@ -35,12 +35,13 @@ class ChatbotCog(commands.Cog):
         if message.author.id == self.bot.user.id: return
         if not message.content.endswith("?"): return
         if message.channel.id not in self.allowed_channels: return
+        c = randint(60,300)
 
         try:
             if self.cooldowns["question"] > time.time(): return
-            self.cooldowns["question"] = time.time() + 600
+            self.cooldowns["question"] = time.time() + c
         except KeyError:
-            self.cooldowns["question"] = time.time() + 600
+            self.cooldowns["question"] = time.time() + c
 
         prompt = f"""
         Marv is a quizbot that asks questions and you reluctantly respond with a sarcastic answer:
@@ -61,25 +62,25 @@ class ChatbotCog(commands.Cog):
         You:
         """
 
-        if randint(1,2) == 1:
-            r = openai.Completion.create(
-            model="text-davinci-002",
-            prompt=prompt,
-            max_tokens = 150,
-            temperature = random.random()
-            )
+        r = openai.Completion.create(
+        model="text-davinci-002",
+        prompt=prompt,
+        max_tokens = 150,
+        temperature = random.random()
+        )
 
-            response_text = r['choices'][0]['text'].strip()
+        response_text = r['choices'][0]['text'].strip()
 
-            output_label = self.get_filter_label(response_text)
-            if output_label == 2: 
-                print("Prompt was too toxic")
-                return
+        output_label = self.get_filter_label(response_text)
+        if output_label == 2: 
+            print("Prompt was too toxic")
+            return
 
-            estimated_cost = r['usage']['total_tokens'] * (4/1000)
-            print("cost ~ ¢", estimated_cost)
-            await message.reply(f"{response_text}")
+        estimated_cost = r['usage']['total_tokens'] * (4/1000)
+        print("cost ~ ¢", estimated_cost)
+        await message.reply(f"{response_text}")
     
+
     @commands.Cog.listener('on_message')
     async def openai_message_listener(self, msg: disnake.Message):
         
