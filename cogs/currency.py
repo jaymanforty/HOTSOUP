@@ -262,7 +262,7 @@ class CurrencyCog(commands.Cog):
             if lotto["user_tickets"][t]["payout"] >= jackpot:
                 self.db.hs_update_lotto_jackpot(10000)
 
-        self.db.hs_update_lotto_jackpot(jackpot + (t*LOTTERY_COST))
+        self.db.hs_update_lotto_jackpot(jackpot + ((t+1)*LOTTERY_COST))
         return winnings
 
 
