@@ -62,7 +62,7 @@ class Database:
         return points
     
     def hs_init_points(self, user_id):
-        self.cursor.execute(""" INSERT OR IGNORE INTO HSPoints VALUES (?,?) """, (user_id, 25))
+        self.cursor.execute(""" INSERT OR IGNORE INTO HSPoints VALUES (?,?) """, (user_id, 50))
         self.connection.commit()
 
     ### Role guessing ###

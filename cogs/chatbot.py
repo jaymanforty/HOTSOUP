@@ -35,7 +35,7 @@ class ChatbotCog(commands.Cog):
         if message.author.id == self.bot.user.id: return
         if not message.content.endswith("?"): return
         if message.channel.id not in self.allowed_channels: return
-        c = randint(60,300)
+        c = randint(300,900)
 
         try:
             if self.cooldowns["question"] > time.time(): return
