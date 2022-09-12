@@ -178,15 +178,15 @@ class CurrencyCog(commands.Cog):
         Matches = (Regular Number, Special Number) -> (5,1) is jackpot
         ```
         Result - payout - odds
-        (0,1)  - 5        - 1 in 5
-        (1,1)  - 5        - 1 in 75
-        (2,1)  - 10       - 1 in 455
-        (3,0)  - 10       - 1 in 525
-        (4,0)  - 100      - 1 in 1,365
-        (3,1)  - 200      - 1 in 2,275
-        (5,0)  - 1000     - 1 in 3,003
-        (4,1)  - 2500     - 1 in 6,825
-        (5,1)  - jackpot  - 1 in 15,015
+        (0,1)  - 5        - 1 in 10
+        (1,1)  - 5        - 1 in 150
+        (2,1)  - 10       - 1 in 910
+        (3,0)  - 10       - 1 in 1,050
+        (4,0)  - 100      - 1 in 2,730
+        (3,1)  - 200      - 1 in 4,550
+        (5,0)  - 1000     - 1 in 6,006
+        (4,1)  - 2500     - 1 in 13,650
+        (5,1)  - jackpot  - 1 in 30,030
         ```
         Jackpot is increased by 5 every ticket with a default of 5000. 
         Also due to my laziness in coding, if multiple tickets win jackpot they'll all be awarded the jackpot
@@ -279,31 +279,31 @@ class CurrencyCog(commands.Cog):
             ball_match = 1 if lotto["lotto_ball"] == user_ball else 0
             winning_tuple = (white_matches, ball_match)
             payout = 0
-            # 1 ball (1/5)
+            # 1 ball (1/10)
             if winning_tuple == (0,1):
                 payout = 5
-            # 1 num and 1 ball (1/75)
+            # 1 num and 1 ball (1/150)
             elif winning_tuple == (1,1):
                 payout = 5
-            # 3 num (1/455)
+            # 3 num (1/910)
             elif winning_tuple == (3,0):
                 payout = 10
-            # 2 num and 1 ball (1/525)
+            # 2 num and 1 ball (1/1050)
             elif winning_tuple == (2,1):
                 payout = 10
-            # 4 num (1/1,365)
+            # 4 num (1/2730)
             elif winning_tuple == (4,0):
                 payout = 100
-            # 3 num and 1 ball (1/2,275)
+            # 3 num and 1 ball (1/4550)
             elif winning_tuple == (3,1):
                 payout = 200
-            # 5 num (1/3,003)
+            # 5 num (1/6006)
             elif winning_tuple == (5,0):
                 payout = 1000
-            # 4 num and 1 ball (1/6,825)
+            # 4 num and 1 ball (1/13650)
             elif winning_tuple == (4,1):
                 payout = 2500
-            # jackpot (1/15,015)
+            # jackpot (1/30030)
             elif winning_tuple == (5,1):
                 payout = jackpot
             
