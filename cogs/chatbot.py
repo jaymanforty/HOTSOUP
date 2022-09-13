@@ -33,7 +33,7 @@ class ChatbotCog(commands.Cog):
         message: disnake.Message) -> None:
 
         if message.author.id == self.bot.user.id: return
-        if not message.content.endswith("?"): return
+        if f"<@{1013037451276722227}>" not in message.content: return
         if message.channel.id not in self.allowed_channels: return
         c = randint(300,900)
 

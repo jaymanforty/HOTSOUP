@@ -9,7 +9,20 @@ from models.database import Database
 HS_ALLOWED_CHANNELS = [1007794808812740729,798935679366594573]
 #HS_EMOJI_ID = 799461124248436818
 HS_EMOJI_ID = 1015513642478870558
-LOTTERY_COST = 5
+LOTTERY_COST = 10
+LOTTERY_RANGE = range(1,36)
+LOTTERY_BALL_RANGE = range(1,4)
+LOTTERY_WINNING_DICT = {
+    (0,1): 1,           # 1/3
+    (1,1): 1,           # 1/105
+    (2,1): 10,          # 1/1,785
+    (3,0): 10,          # 1/6,545
+    (3,1): 500,         # 1/19,635
+    (4,0): 1000,        # 1/52,630
+    (4,1): 2500,        # 1/157,080
+    (5,0): 5000,        # 1/324,632
+    (5,1): "jackpot"
+}
 
 class CurrencyCog(commands.Cog):
     def __init__(self, bot) -> None:
@@ -78,25 +91,19 @@ class CurrencyCog(commands.Cog):
     async def hs_gamble(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        amount: commands.Range[1,100],
-        multiplier: int = 2) -> None:
+        amount: commands.Range[1,500]) -> None:
         """
-        Gamble some HS! points to win big! Odds are 1/(multiplier*2)...default is (1/4)
+        Gamble some HS! points
 
         Parameters
         ----------
         amount: :class:`int`
             The amount to gamble
-        multiplier: :class:`int`
-            (amount * mult) is your reward. Higher the multiplier the less odds!
         """
-        if multiplier < 2:
-            await ctx.send(embed=Embed(description="To gamble you need a multiplier of at least 2!"), ephemeral=True)
-            return
 
         if not await self.hs_sub_points(ctx,amount): return
 
-        reward = (amount*multiplier) if 1 == rnd.randint(1,multiplier*2) else 0
+        reward = (amount*2) if 1 == rnd.randint(1,5) else 0
 
         points = self.db.hs_add_points(ctx.author.id, reward)
         
@@ -134,7 +141,7 @@ class CurrencyCog(commands.Cog):
     async def hs_dice(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        amount: commands.Range[1,50],
+        amount: commands.Range[1,100],
         guess: commands.Range[1,6]) -> None:
         """
         Rolls 6 dice. Payout = dice*bet
@@ -159,6 +166,7 @@ class CurrencyCog(commands.Cog):
         else:
             await ctx.send(embed=disnake.Embed(description=f"You bet **{amount}**\nYou guess **{guess}**.\nYou rolled {','.join(rolls)}\n\nYou gambled away {self.HS_EMOJI}**{amount}**... ({self.HS_EMOJI}{points})"))
 
+
     @commands.slash_command()
     async def hs_lottery_info(
         self,
@@ -171,33 +179,34 @@ class CurrencyCog(commands.Cog):
         Current Jackpot: {self.HS_EMOJI}{self.db.hs_get_lotto_jackpot()}
         Costs 10 HS! points to play per ticket
 
-        The bot then simulates however many lottery tickets [1,10] you decide. 
+        The bot then simulates however many lottery tickets [1,25] you decide. 
         Payout is determined on how many numbers match.
-        Regular numbers are picked [1,15] and the special number is picked [1,10]
+        Regular numbers are picked [1,35] and the special number is picked [1,3]
 
-        Matches = (Regular Number, Special Number) -> (5,1) is jackpot
+        Matches = (Regular Numbers, Special Number) -> (5,1) is jackpot
         ```
         Result - payout - odds
-        (0,1)  - 5        - 1 in 10
-        (1,1)  - 5        - 1 in 150
-        (2,1)  - 10       - 1 in 910
-        (3,0)  - 10       - 1 in 1,050
-        (4,0)  - 100      - 1 in 2,730
-        (3,1)  - 100      - 1 in 4,550
-        (5,0)  - 1000     - 1 in 6,006
-        (4,1)  - 2500     - 1 in 13,650
-        (5,1)  - jackpot  - 1 in 30,030
+        (0,1): 1            1 in 3
+        (1,1): 5            1 in 105
+        (2,1): 10           1 in 1,785
+        (3,0): 50           1 in 6,545
+        (3,1): 250          1 in 19,635
+        (4,0): 1000         1 in 52,630
+        (4,1): 2500         1 in 157,080
+        (5,0): 5000         1 in 324,632
+        (5,1): jackpot      1 in 973,896
         ```
-        Jackpot is increased by 5 every ticket with a default of 5000. 
+        Jackpot is increased by 10 every ticket with a default of 10000. 
         Also due to my laziness in coding, if multiple tickets win jackpot they'll all be awarded the jackpot
         """
         await ctx.send(embed=Embed(description=info))
+ 
  
     @commands.slash_command()
     async def hs_lottery(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        plays: commands.Range[1,10] = 1) -> None:
+        plays: commands.Range[1,100] = 1) -> None:
         """
         Simulate a lottery ticket, costs 5 HS! points. Entries add 5 for every ticket to jackpot
         """
@@ -210,26 +219,20 @@ class CurrencyCog(commands.Cog):
 
         if not await self.hs_sub_points(ctx, LOTTERY_COST*plays): return         
 
-        lotto_range = range(1,16)
-        ball_range = range(1,11)
-
-        
-        lotto_numbers = sorted(rnd.sample(lotto_range,5))
-        lotto_ball = rnd.choice(ball_range)
-
+        lotto_numbers = sorted(rnd.sample(LOTTERY_RANGE,5))
+        lotto_ball = rnd.choice(LOTTERY_BALL_RANGE)
         lotto = {"user_tickets": {}, "lotto_nums":lotto_numbers,"lotto_ball":lotto_ball}
-        for i in range(0,plays):
-            lotto["user_tickets"][i] = {"nums": sorted(rnd.sample(lotto_range,5)), "ball":rnd.choice(ball_range)}
 
-        
+        for i in range(0,plays):
+            lotto["user_tickets"][i] = {"nums": sorted(rnd.sample(LOTTERY_RANGE,5)), "ball":rnd.choice(LOTTERY_BALL_RANGE)}
+
         lotto = self.do_lotto_matches(lotto)
         winnings = self.get_lotto_winnings(lotto)
         points = self.db.hs_add_points(ctx.author.id, winnings)
-
         ticket_str = self.get_lotto_ticket_str(points, winnings, lotto)
         
         await ctx.send(embed=Embed(description=ticket_str))
-        
+    
 
     ### UTIL ###
     def get_lotto_ticket_str(self, total_points: int, winnings: int, lotto: dict) -> str:
@@ -255,17 +258,10 @@ class CurrencyCog(commands.Cog):
 
 
     def get_lotto_winnings(self, lotto: dict) -> int:
-        jackpot = self.db.hs_get_lotto_jackpot()
         winnings = 0
         for t in lotto["user_tickets"]:
             winnings += lotto["user_tickets"][t]["payout"]
-            if lotto["user_tickets"][t]["payout"] >= jackpot:
-                self.db.hs_update_lotto_jackpot(10000)
-
-        self.db.hs_update_lotto_jackpot(jackpot + ((t+1)*LOTTERY_COST))
         return winnings
-
-
 
     def do_lotto_matches(self, lotto: dict) -> dict:
         """ Returns a dict with added properties to ticket dicts doing winning tuple and payout """
@@ -279,37 +275,21 @@ class CurrencyCog(commands.Cog):
             ball_match = 1 if lotto["lotto_ball"] == user_ball else 0
             winning_tuple = (white_matches, ball_match)
             payout = 0
-            # 1 ball (1/10)
-            if winning_tuple == (0,1):
-                payout = 5
-            # 1 num and 1 ball (1/150)
-            elif winning_tuple == (1,1):
-                payout = 5
-            # 3 num (1/910)
-            elif winning_tuple == (3,0):
-                payout = 10
-            # 2 num and 1 ball (1/1050)
-            elif winning_tuple == (2,1):
-                payout = 10
-            # 4 num (1/2730)
-            elif winning_tuple == (4,0):
-                payout = 100
-            # 3 num and 1 ball (1/4550)
-            elif winning_tuple == (3,1):
-                payout = 200
-            # 5 num (1/6006)
-            elif winning_tuple == (5,0):
-                payout = 1000
-            # 4 num and 1 ball (1/13650)
-            elif winning_tuple == (4,1):
-                payout = 2500
-            # jackpot (1/30030)
-            elif winning_tuple == (5,1):
-                payout = jackpot
             
+            try:
+                payout = LOTTERY_WINNING_DICT[winning_tuple]
+                if payout == "jackpot":
+                    self.db.hs_update_lotto_jackpot(10000)
+                    payout = jackpot
+                else:
+                    jackpot += LOTTERY_COST
+
+            except KeyError:
+                jackpot += LOTTERY_COST
+
             lotto["user_tickets"][t]["winning_tuple"] = winning_tuple
             lotto["user_tickets"][t]["payout"] = payout
-
+        self.db.hs_update_lotto_jackpot(jackpot)
         return lotto
 
     def roll_dice(self):
