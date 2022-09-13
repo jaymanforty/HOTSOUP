@@ -78,7 +78,7 @@ class CurrencyCog(commands.Cog):
     async def hs_gamble(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        amount: int,
+        amount: commands.Range[1,100],
         multiplier: int = 2) -> None:
         """
         Gamble some HS! points to win big! Odds are 1/(multiplier*2)...default is (1/4)
@@ -134,7 +134,7 @@ class CurrencyCog(commands.Cog):
     async def hs_dice(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        amount: int,
+        amount: commands.Range[1,50],
         guess: commands.Range[1,6]) -> None:
         """
         Rolls 6 dice. Payout = dice*bet
@@ -169,11 +169,11 @@ class CurrencyCog(commands.Cog):
 
         info = f"""
         Current Jackpot: {self.HS_EMOJI}{self.db.hs_get_lotto_jackpot()}
-        Costs 5 HS! points to play per ticket
+        Costs 10 HS! points to play per ticket
 
         The bot then simulates however many lottery tickets [1,10] you decide. 
         Payout is determined on how many numbers match.
-        Regular numbers are picked [1,15] and the special number is picked [1,5]
+        Regular numbers are picked [1,15] and the special number is picked [1,10]
 
         Matches = (Regular Number, Special Number) -> (5,1) is jackpot
         ```
@@ -183,7 +183,7 @@ class CurrencyCog(commands.Cog):
         (2,1)  - 10       - 1 in 910
         (3,0)  - 10       - 1 in 1,050
         (4,0)  - 100      - 1 in 2,730
-        (3,1)  - 200      - 1 in 4,550
+        (3,1)  - 100      - 1 in 4,550
         (5,0)  - 1000     - 1 in 6,006
         (4,1)  - 2500     - 1 in 13,650
         (5,1)  - jackpot  - 1 in 30,030
@@ -192,7 +192,7 @@ class CurrencyCog(commands.Cog):
         Also due to my laziness in coding, if multiple tickets win jackpot they'll all be awarded the jackpot
         """
         await ctx.send(embed=Embed(description=info))
-
+ 
     @commands.slash_command()
     async def hs_lottery(
         self,
