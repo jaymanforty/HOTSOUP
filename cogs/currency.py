@@ -79,11 +79,11 @@ class CurrencyCog(commands.Cog):
             return
 
         if self.last_person_broke == ctx.author:
-            await ctx.send(embed=disnake.Embed(description=f"One of those days... take +{self.HS_EMOJI}10"),ephemeral=True)
-            self.db.hs_add_points(ctx.author.id, 20)
+            await ctx.send(embed=disnake.Embed(description=f"One of those days... take +{self.HS_EMOJI}50"),ephemeral=True)
+            self.db.hs_add_points(ctx.author.id, 100)
         else:
             self.last_person_broke = ctx.author
-            self.db.hs_add_points(ctx.author.id, 10)
+            self.db.hs_add_points(ctx.author.id, 50)
             await self.hs_points(ctx)
 
 
@@ -91,7 +91,7 @@ class CurrencyCog(commands.Cog):
     async def hs_gamble(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        amount: commands.Range[1,500]) -> None:
+        amount: int) -> None:
         """
         Gamble some HS! points
 
@@ -141,7 +141,7 @@ class CurrencyCog(commands.Cog):
     async def hs_dice(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        amount: commands.Range[1,100],
+        amount: int,
         guess: commands.Range[1,6]) -> None:
         """
         Rolls 6 dice. Payout = dice*bet
