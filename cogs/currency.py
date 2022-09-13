@@ -211,7 +211,7 @@ class CurrencyCog(commands.Cog):
         if not await self.hs_sub_points(ctx, LOTTERY_COST*plays): return         
 
         lotto_range = range(1,16)
-        ball_range = range(1,6)
+        ball_range = range(1,11)
 
         
         lotto_numbers = sorted(rnd.sample(lotto_range,5))
