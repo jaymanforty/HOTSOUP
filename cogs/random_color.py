@@ -49,7 +49,7 @@ class RandomColor(commands.Cog):
         rgb = tuple(self.random_rgb())
         hexcode = self.rgb_to_hex(rgb)
         color_int = int(hexcode, 16)
-        m = ctx.guild.get_member(149255092124647424)
+        m = ctx.guild.get_member(452655064989958164)
 
         try:
             r = [x for x in ctx.guild.roles if "circles308" in x.name][0]
