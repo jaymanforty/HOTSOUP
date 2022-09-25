@@ -1,15 +1,66 @@
 from colorsys import hls_to_rgb, rgb_to_hls
 import disnake
 import random as rnd
+import time
 
-from PIL import Image,ImageDraw
+from PIL import Image
 from disnake.ext import commands
 
 class RandomColor(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot: commands.InteractionBot = bot
+        self.cooldowns = {}
 
+    # Automatically create and assign a new role of the persons name with custom
+    '''
+    @commands.slash_command()
+    @commands.cooldown(1,86400)
+    async def random_name_color(
+        self,
+        ctx: disnake.ApplicationCommandInteraction) -> None:
+        """
+        Change your name color, can use once per day.
+        """
+        rgb = tuple(self.random_rgb())
+        hexcode = self.rgb_to_hex(rgb)
+        color_int = int(hexcode, 16)
+
+        if ctx.author.name not in [x.name for x in ctx.guild.roles]:
+            r = await ctx.guild.create_role(name=ctx.author.name, color=color_int)
+            print(r.position)
+            await r.edit(position=ctx.guild.roles[-1].position-1) #always top level so their name changes color
+            await ctx.author.add_roles(r)
+        else:
+            r = [x for x in ctx.guild.roles if ctx.author.name in x.name][0]
+            await r.edit(color=color_int)
+            await ctx.author.add_roles(r)
+
+        await ctx.send(embed=disnake.Embed(description=f"Changed name color to #**{hexcode.upper()}**", color=color_int), ephemeral=True)
+    '''
+
+    @commands.slash_command()
+    @commands.cooldown(1,86400)
+    async def doves_name_color(
+        self,
+        ctx: disnake.ApplicationCommandInteraction) -> None:
+        """
+        Change Dove's name color, can use once per day.
+        """
+        rgb = tuple(self.random_rgb())
+        hexcode = self.rgb_to_hex(rgb)
+        color_int = int(hexcode, 16)
+
+        try:
+            r = [x for x in ctx.guild.roles if "circles308" in x.name][0]
+            await r.edit(color=color_int)
+            await ctx.author.add_roles(r)
+        except IndexError:
+            await ctx.send("He doesn't have the role anymore! :( ", ephemeral=True)
+            return
+
+        await ctx.send(embed=disnake.Embed(description=f"Changed name color to #**{hexcode.upper()}**", color=color_int), ephemeral=True)
     
+
     @commands.slash_command()
     async def randomcolor(
         self,

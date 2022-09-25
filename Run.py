@@ -1,6 +1,7 @@
 import os
 import disnake
 import logging
+import datetime
 
 from os.path import exists
 from disnake.ext import commands
@@ -44,10 +45,16 @@ async def on_slash_command(ctx:disnake.ApplicationCommandInteraction):
 async def on_slash_command_error(ctx:disnake.ApplicationCommandInteraction, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send(embed=disnake.Embed(description="You are not allowed to use this"), ephemeral=True)
+
+    elif isinstance(error, commands.errors.CommandOnCooldown):
+        await ctx.send(embed=disnake.Embed(description=f"You are on cooldown. Try again after `{str(datetime.timedelta(seconds = round(error.retry_after)))}`"), ephemeral=True)
+
     else:
         await ctx.channel.send(error)
         logging.error(f"Unhandled Exception from command: {ctx.application_command}", exc_info=error)
 
+    
+        
 
 #on_ready event
 @bot.event
