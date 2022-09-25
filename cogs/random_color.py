@@ -39,8 +39,8 @@ class RandomColor(commands.Cog):
     '''
 
     @commands.slash_command()
-    @commands.cooldown(1,86400)
-    async def doves_name_color(
+    @commands.cooldown(1,86400, commands.BucketType.member)
+    async def doves(
         self,
         ctx: disnake.ApplicationCommandInteraction) -> None:
         """
@@ -49,11 +49,12 @@ class RandomColor(commands.Cog):
         rgb = tuple(self.random_rgb())
         hexcode = self.rgb_to_hex(rgb)
         color_int = int(hexcode, 16)
+        m = ctx.guild.get_member(149255092124647424)
 
         try:
             r = [x for x in ctx.guild.roles if "circles308" in x.name][0]
             await r.edit(color=color_int)
-            await ctx.author.add_roles(r)
+            await m.add_roles(r)
         except IndexError:
             await ctx.send("He doesn't have the role anymore! :( ", ephemeral=True)
             return
