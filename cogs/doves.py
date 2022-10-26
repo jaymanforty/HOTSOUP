@@ -1,13 +1,31 @@
 import disnake
 import random as rnd
+import time
 from disnake.ext import commands
 
 
 class DovesCog(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot: commands.InteractionBot = bot
-        self.mute_doves_users = set()
+        self.mute_doves_users = {}
+        self.mute_doves_timestamp = None
 
+    @commands.Cog.listener('on_message')
+    async def doves_message(
+        self,
+        message: disnake.Message) -> None:
+
+        if message.author.id == self.bot.user.id: return
+        if not self.mute_doves_timestamp: return
+
+        try:
+            if self.mute_doves_users[message.author.id] <= time.time():
+                self.mute_doves_users.pop(message.author.id)
+            else:
+                await message.delete()
+        except: KeyError
+
+        
     @commands.slash_command()
     async def only_doves_can_use_this(
         self,
@@ -25,9 +43,8 @@ class DovesCog(commands.Cog):
             await ctx.send("Nice try bird",ephemeral=True)
             return
         s = rnd.randint(150,300)
-        await g.timeout(user,duration=s)
         await ctx.send(f"Muted {user.display_name} for {s} seconds")
-        self.mute_doves_users.remove(user.id)
+        self.mute_doves_users[user.id] = time.time() + s
 
     @commands.slash_command()
     @commands.cooldown(1,86400, commands.BucketType.member)
@@ -41,11 +58,10 @@ class DovesCog(commands.Cog):
             await ctx.send("Nice try bird", ephemeral=True)
             return
 
-        m = ctx.guild.get_member(452655064989958164)
         s = rnd.randint(30,300)
-        await ctx.guild.timeout(m,duration=s)
         await ctx.send(f"Muted doves for {s} seconds")
-        self.mute_doves_users.add(ctx.author.id)
+        self.mute_doves_users[ctx.author.id] = time.time()
+        self.mute_doves_users[452655064989958164] = time.time() + s
 
     @commands.slash_command()
     @commands.cooldown(1,86400, commands.BucketType.member)
