@@ -38,29 +38,7 @@ class RandomColor(commands.Cog):
         await ctx.send(embed=disnake.Embed(description=f"Changed name color to #**{hexcode.upper()}**", color=color_int), ephemeral=True)
     '''
 
-    @commands.slash_command()
-    @commands.cooldown(1,86400, commands.BucketType.member)
-    async def doves(
-        self,
-        ctx: disnake.ApplicationCommandInteraction) -> None:
-        """
-        Change Dove's name color, can use once per day.
-        """
-        rgb = tuple(self.random_rgb())
-        hexcode = self.rgb_to_hex(rgb)
-        color_int = int(hexcode, 16)
-        m = ctx.guild.get_member(452655064989958164)
-
-        try:
-            r = [x for x in ctx.guild.roles if "circles308" in x.name][0]
-            await r.edit(color=color_int)
-            await m.add_roles(r)
-        except IndexError:
-            await ctx.send("He doesn't have the role anymore! :( ", ephemeral=True)
-            return
-
-        await ctx.send(embed=disnake.Embed(description=f"Changed name color to #**{hexcode.upper()}**", color=color_int), ephemeral=True)
-    
+   
 
     @commands.slash_command()
     async def randomcolor(
