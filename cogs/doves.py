@@ -28,7 +28,7 @@ class DovesCog(commands.Cog):
         self.mute_doves_users.remove(user.id)
 
     @commands.slash_command()
-    @commands.cooldown(1,3600, commands.BucketType.member)
+    @commands.cooldown(1,86400, commands.BucketType.member)
     async def mute_doves(
         self,
         ctx: disnake.ApplicationCommandInteraction) -> None:
