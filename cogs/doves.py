@@ -16,11 +16,11 @@ class DovesCog(commands.Cog):
         """
         Mute whoever has muted you
         """
-        if user.id == 452655064989958164 or user.id not in self.mute_doves_users:
-            await ctx.send("Nice try bird",ephemeral=True)
-            return
         if ctx.author.id != 452655064989958164:
             await ctx.send("Nice try", ephemeral=True)
+            return
+        if user.id == 452655064989958164 or user.id not in self.mute_doves_users:
+            await ctx.send("Nice try bird",ephemeral=True)
             return
         s = rnd.randint(150,300)
         await ctx.guild.timeout(user,duration=s)
