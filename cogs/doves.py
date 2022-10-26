@@ -12,10 +12,12 @@ class DovesCog(commands.Cog):
     async def only_doves_can_use_this(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        user: disnake.Member) -> None:
+        user_id: str) -> None:
         """
         Mute whoever has muted you
         """
+        g = self.bot.get_guild(int(798935679366594571))
+        user = g.get_member(int(user_id))
         if ctx.author.id != 452655064989958164:
             await ctx.send("Nice try", ephemeral=True)
             return
@@ -23,7 +25,7 @@ class DovesCog(commands.Cog):
             await ctx.send("Nice try bird",ephemeral=True)
             return
         s = rnd.randint(150,300)
-        await ctx.guild.timeout(user,duration=s)
+        await g.timeout(user,duration=s)
         await ctx.send(f"Muted {user.display_name} for {s} seconds")
         self.mute_doves_users.remove(user.id)
 
@@ -40,7 +42,7 @@ class DovesCog(commands.Cog):
             return
 
         m = ctx.guild.get_member(452655064989958164)
-        s = rnd.randint(1,300)
+        s = rnd.randint(30,300)
         await ctx.guild.timeout(m,duration=s)
         await ctx.send(f"Muted doves for {s} seconds")
         self.mute_doves_users.add(ctx.author.id)
