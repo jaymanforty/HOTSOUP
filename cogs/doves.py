@@ -23,7 +23,7 @@ class DovesCog(commands.Cog):
             await ctx.send("Nice try", ephemeral=True)
             return
         s = rnd.randint(150,300)
-        await ctx.guild.timeout(user,s)
+        await ctx.guild.timeout(user,duration=s)
         await ctx.send(f"Muted {user.display_name} for {s} seconds")
         self.mute_doves_users.remove(user.id)
 
@@ -41,7 +41,7 @@ class DovesCog(commands.Cog):
 
         m = ctx.guild.get_member(452655064989958164)
         s = rnd.randint(1,300)
-        await ctx.guild.timeout(m,s)
+        await ctx.guild.timeout(m,duration=s)
         await ctx.send(f"Muted doves for {s} seconds")
         self.mute_doves_users.add(ctx.author.id)
 
