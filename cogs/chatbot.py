@@ -39,9 +39,9 @@ class ChatbotCog(commands.Cog):
 
         try:
             if self.cooldowns["question"] > time.time(): return
-            self.cooldowns["question"] = time.time() + c
+            self.cooldowns["question"] = time.time()
         except KeyError:
-            self.cooldowns["question"] = time.time() + c
+            self.cooldowns["question"] = time.time()
 
         prompt = f"""
         Marv is a quizbot that asks questions and you reluctantly respond with a sarcastic answer:
