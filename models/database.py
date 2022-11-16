@@ -92,3 +92,21 @@ class Database:
         """ Returns the number of guesses for user_id supplied """
         guesses = self.cursor.execute(""" SELECT NumGuesses FROM Guesses WHERE UserId = ?""",(user_id,)).fetchone()
         return guesses[0] if guesses else None
+
+
+    ### HS! Tag ###
+    def hs_add_tag_count(self, user_id, count) -> int:
+        self.hs_init_tag_count(user_id)
+        count += self.hs_get_tag_count(user_id)
+        self.cursor.execute(""" UPDATE HSTag SET TagCount = ? WHERE UserId = ?""", (count, user_id))
+        self.connection.commit()
+        return count
+
+    def hs_get_tag_count(self, user_id) -> int:
+        self.hs_init_tag_count(user_id)
+        points = self.cursor.execute(""" SELECT TagCount FROM HSTag WHERE UserId = ? """,(user_id,)).fetchone()
+        return points[0] if points else 0
+
+    def hs_init_tag_count(self, user_id):
+        self.cursor.execute(""" INSERT OR IGNORE INTO HSTag VALUES (?,?) """, (user_id, 0))
+        self.connection.commit()
