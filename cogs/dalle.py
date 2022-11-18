@@ -50,7 +50,7 @@ class DalleCog(commands.Cog):
         await ctx.send(embed=disnake.Embed(description=hof_str))
 
     @commands.slash_command()
-    async def image_hof(
+    async def image_lookup(
         self,
         ctx: disnake.ApplicationCommandInteraction,
         image_name: str) -> None:
