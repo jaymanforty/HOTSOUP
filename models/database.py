@@ -162,3 +162,6 @@ class Database:
             self.cursor.execute(""" UPDATE ImageVoting SET VotesNo = VotesNo + 1 WHERE ImageName = ? """, (image_name,))
 
         self.connection.commit()
+
+    def get_top_5_images(self):
+        return self.cursor.execute(""" SELECT * FROM ImageVoting ORDER BY VotesYes DESC, VotesNo ASC LIMIT 5 """).fetchmany()
