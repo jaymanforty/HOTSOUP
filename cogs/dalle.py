@@ -13,7 +13,7 @@ class DalleCog(commands.Cog):
 
 
     @commands.slash_command()
-    @commands.cooldown(1,86400, commands.BucketType.member)
+    @commands.cooldown(1,3600, commands.BucketType.member)
     async def create_image(
         self,
         ctx: disnake.ApplicationCommandInteraction,
