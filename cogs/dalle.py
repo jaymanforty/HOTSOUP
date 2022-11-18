@@ -1,6 +1,8 @@
 import disnake
 import os
 import openai
+import shutil
+import requests
 from disnake.ext import commands
 
 from models.database import Database
@@ -29,7 +31,11 @@ class DalleCog(commands.Cog):
         await ctx.response.defer()
         response = openai.Image.create(prompt=prompt,n=1,size="1024x1024")
         image_url = response['data'][0]['url']
-        await ctx.send(image_url)
+        res = requests.get(image_url,stream=True)
+        with open("temp_dalle.png",'wb') as f:
+            shutil.copyfileobj(res.raw,f)
+        img = disnake.File("temp_dalle.png")
+        await ctx.send(file=img)
 
 def setup(bot):
     bot.add_cog(DalleCog(bot))

@@ -52,7 +52,7 @@ class CurrencyCog(commands.Cog):
         ldr_brd = ""
         counter = 1
         for u in users:
-            ldr_brd += f"{counter}: <@{u[0]}> - {self.HS_EMOJI}**{u[1]}**\n"
+            ldr_brd += f"{counter}: <@{u[0]}> - {self.HS_EMOJI}**{u[1]}**  |  +{self.HS_EMOJI}{u[2]}  |  -{self.HS_EMOJI}{u[3]}\n"
             counter += 1
         await ctx.send(embed=Embed(description=ldr_brd))
 
