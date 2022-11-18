@@ -27,7 +27,7 @@ class DalleCog(commands.Cog):
             The prompt to generate an image with
         """
         await ctx.response.defer()
-        response = openai.Image.create(prompt=prompt,n=1,size="256x256")
+        response = openai.Image.create(prompt=prompt,n=1,size="1024x1024")
         image_url = response['data'][0]['url']
         await ctx.send(image_url)
 
