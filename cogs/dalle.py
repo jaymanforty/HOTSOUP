@@ -20,6 +20,11 @@ class DalleCog(commands.Cog):
         prompt: str) -> None:
         """
         AI generated image
+
+        Parameters
+        ----------
+        prompt :class:`str`
+            The prompt to generate an image with
         """
         await ctx.response.defer()
         response = openai.Image.create(prompt=prompt,n=1,size="256x256")
