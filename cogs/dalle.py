@@ -34,14 +34,27 @@ class DalleCog(commands.Cog):
         response = openai.Image.create(prompt=prompt,n=1,size="1024x1024")
         image_url = response['data'][0]['url']
         res = requests.get(image_url,stream=True)
+
         if not os.path.exists("dalle_pics"):
             os.makedirs("dalle_pics")
 
-        with open(f"dalle_pics/{self.slugify(prompt)}.png",'wb') as f:
+        picname = self.uniquify(self.slugify(prompt))
+        
+        with open(f"dalle_pics/{picname}.png",'wb') as f:
             shutil.copyfileobj(res.raw,f)
 
-        img = disnake.File("temp_dalle.png")
+        img = disnake.File(f"dalle_pics/{picname}.png")
         await ctx.send(file=img)
+
+    def uniquify(self, path):
+        filename, extension = os.path.splitext(path)
+        counter = 1
+
+        while os.path.exists(path):
+            path = filename + " (" + str(counter) + ")" + extension
+            counter += 1
+
+        return path
 
     def slugify(self, value, allow_unicode=False):
         """
