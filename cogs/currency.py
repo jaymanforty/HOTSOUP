@@ -64,7 +64,8 @@ class CurrencyCog(commands.Cog):
         """
         How many HS! points you have 
         """
-        await ctx.send(embed=Embed(description=f"{self.HS_EMOJI}{self.db.hs_get_points(ctx.author.id)}"), ephemeral=True)
+        total_str = f"Total Points Won: {self.HS_EMOJI}{self.db.hs_get_total_points_won(ctx.author.id)}\nTotal Points Lost: {self.HS_EMOJI}{self.db.hs_get_total_points_lost(ctx.author.id)}"
+        await ctx.send(embed=Embed(description=f"{self.HS_EMOJI}{self.db.hs_get_points(ctx.author.id)}\n{total_str}"), ephemeral=True)
     
     
     @commands.slash_command()
@@ -86,33 +87,6 @@ class CurrencyCog(commands.Cog):
             self.db.hs_add_points(ctx.author.id, 50)
             await self.hs_points(ctx)
 
-
-    @commands.slash_command()
-    async def hs_gamble(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        amount: int) -> None:
-        """
-        Gamble some HS! points
-
-        Parameters
-        ----------
-        amount: :class:`int`
-            The amount to gamble
-        """
-
-        if not await self.hs_sub_points(ctx,amount): return
-
-        reward = (amount*2) if 1 == rnd.randint(1,5) else 0
-
-        points = self.db.hs_add_points(ctx.author.id, reward)
-        
-        if reward > 0:
-            await ctx.send(embed=Embed(description=f"{ctx.author.mention} gambles {self.HS_EMOJI}**{amount}** and wins {self.HS_EMOJI}**{reward}**! ({self.HS_EMOJI}{points})"))
-        else:
-            await ctx.send(embed=Embed(description=f"{ctx.author.mention} gambles {self.HS_EMOJI}**{amount}** away.... ({self.HS_EMOJI}{points})"))
-
-
     @commands.slash_command()
     async def hs_double(
         self,
@@ -128,8 +102,14 @@ class CurrencyCog(commands.Cog):
 
         reward = points if 1 == rnd.randint(1,2) else 0
 
+        #Total points lost / won
+        if reward > 0: #points won
+            self.db.hs_add_total_points_won(ctx.author.id, reward)
+        else:   #points lost
+            self.db.hs_add_total_points_lost(ctx.author.id, points)
+
         points = self.db.hs_add_points(ctx.author.id, reward)
-        
+
         if reward > 0:
             await ctx.send(embed=Embed(description=f"{ctx.author.mention} took a chance and now has {self.HS_EMOJI}**{points}**!"))
         else:
@@ -160,6 +140,12 @@ class CurrencyCog(commands.Cog):
 
         payout = rolls.count(str(guess))*amount
         points = self.db.hs_add_points(ctx.author.id, payout)
+
+        #Total points lost / won
+        if payout > 0: #points won
+            self.db.hs_add_total_points_won(ctx.author.id, payout)
+        else:   #points lost
+            self.db.hs_add_total_points_lost(ctx.author.id, amount)
 
         if payout > 0:
             await ctx.send(embed=disnake.Embed(description=f"You bet **{amount}**\nYou guess **{guess}**.\nYou rolled {','.join(rolls)}\n\nYou win {self.HS_EMOJI}**{payout}**! ({self.HS_EMOJI}{points})"))
@@ -231,6 +217,14 @@ class CurrencyCog(commands.Cog):
         points = self.db.hs_add_points(ctx.author.id, winnings)
         ticket_str = self.get_lotto_ticket_str(points, winnings, lotto)
         
+        net_winnings = winnings-(len(lotto["user_tickets"])*LOTTERY_COST)
+
+        #Total points lost / won
+        if net_winnings > 0: #points won
+            self.db.hs_add_total_points_won(ctx.author.id, net_winnings)
+        else:   #points lost
+            self.db.hs_add_total_points_lost(ctx.author.id, net_winnings)
+
         await ctx.send(embed=Embed(description=ticket_str))
     
 
@@ -303,15 +297,26 @@ class CurrencyCog(commands.Cog):
         await asyncio.sleep(time_before_next_message)
 
         channel: disnake.TextChannel = self.bot.get_channel(rnd.choice(HS_ALLOWED_CHANNELS))
+        
+        #Select random amount of points to award. 25->50->100->500
+        random_int = rnd.randint(1,50)
+        if random_int < 26:
+            points = 25
+        elif random_int < 42:
+            points = 50
+        elif random_int < 50:
+            points = 100
+        elif random_int < 51:
+            points = 500
 
-        hs_msg = await channel.send(embed=Embed(description=f"A wild {self.HS_EMOJI} has appeared! First to react gets {self.HS_EMOJI}**25**!"))
+        hs_msg = await channel.send(embed=Embed(description=f"A wild {self.HS_EMOJI} has appeared! First to react gets {self.HS_EMOJI}**{points}**!"))
         await hs_msg.add_reaction(self.HS_EMOJI)
 
         def hs_check(reaction: disnake.Reaction, user: disnake.User):
             return reaction.emoji == self.HS_EMOJI and reaction.message == hs_msg and user.id != self.bot.user.id
 
         reaction, r_user = await self.bot.wait_for('reaction_add', check=hs_check)
-        self.db.hs_add_points(r_user.id,25)
+        self.db.hs_add_points(r_user.id,points)
         await hs_msg.delete()
         await self.start_random_message_sender()
 

@@ -44,12 +44,36 @@ class Database:
         points = self.cursor.execute(""" SELECT Points FROM HSPoints WHERE UserId = ? """,(user_id,)).fetchone()
         return points[0] if points else 0
 
+    def hs_get_total_points_won(self, user_id) -> int:
+        self.hs_init_points(user_id)
+        points = self.cursor.execute(""" SELECT TotalPointsWon FROM HSPoints WHERE UserId = ? """,(user_id,)).fetchone()
+        return points[0] if points else 0
+
+    def hs_get_total_points_lost(self, user_id) -> int:
+        self.hs_init_points(user_id)
+        points = self.cursor.execute(""" SELECT TotalPointsLost FROM HSPoints WHERE UserId = ? """,(user_id,)).fetchone()
+        return points[0] if points else 0
+
     def hs_add_points(self, user_id, points) -> int:
         """ Add X amount of points to specified user_id """
         self.hs_init_points(user_id)
         points += self.hs_get_points(user_id)
         self.cursor.execute(""" UPDATE HSPoints SET Points = ? WHERE UserId = ?""", (points, user_id))
         self.connection.commit()
+        return points
+
+    def hs_add_total_points_won(self, user_id, points) -> int:
+        """ Add X amount of points to total points won """
+        self.hs_init_points(user_id)
+        points += self.hs_get_total_points_won(user_id)
+        self.cursor.execute(""" UPDATE HSPoints SET TotalPointsWon = ? WHERE UserId = ?""",(points,user_id))
+        return points
+
+    def hs_add_total_points_lost(self,user_id,points) -> int:
+        """ Add X amount of points to total points lost """
+        self.hs_init_points(user_id)
+        points += self.hs_get_total_points_lost(user_id)
+        self.cursor.execute(""" UPDATE HSPoints SET TotalPointsLost = ? WHERE UserId = ?""",(points,user_id))
         return points
 
     def hs_sub_points(self, user_id, points) -> int:
@@ -62,7 +86,7 @@ class Database:
         return points
     
     def hs_init_points(self, user_id):
-        self.cursor.execute(""" INSERT OR IGNORE INTO HSPoints VALUES (?,?) """, (user_id, 50))
+        self.cursor.execute(""" INSERT OR IGNORE INTO HSPoints VALUES (?,?,?,?) """, (user_id, 50, 0 ,0))
         self.connection.commit()
 
     ### Role guessing ###
