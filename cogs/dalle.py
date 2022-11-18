@@ -43,12 +43,12 @@ class DalleCog(commands.Cog):
         await ctx.response.defer()
 
         top_5 = self.db.get_top_5_images()
-        embed_lst = []
         for r in top_5:
             e = disnake.Embed(title=r[0],description=f"✅ **{r[1]}**   |   ❎ **{r[2]}**\n\nSubmitted by: <@{r[3]}>")
             e.set_image(file=disnake.File(f"dalle_pics/{r[0]}.png"))
-            embed_lst.append(e)
-        await ctx.send(embeds=embed_lst)
+            await ctx.channel.send(embed=e)
+        await ctx.send("Sent top 5",delete_after=1)
+        
 
     @commands.slash_command()
     @commands.cooldown(1,120, commands.BucketType.member)
