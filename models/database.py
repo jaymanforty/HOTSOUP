@@ -164,4 +164,6 @@ class Database:
         self.connection.commit()
 
     def get_top_5_images(self):
-        return self.cursor.execute(""" SELECT * FROM ImageVoting ORDER BY VotesYes DESC, VotesNo ASC LIMIT 5 """).fetchmany()
+        rows = self.cursor.execute(""" SELECT * FROM ImageVoting ORDER BY VotesYes DESC, VotesNo ASC LIMIT 5 """).fetchall()
+        print(rows)
+        return rows
