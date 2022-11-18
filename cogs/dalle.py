@@ -63,6 +63,7 @@ class DalleCog(commands.Cog):
         image_name :class:`str`
             The name of the image to lookup
         """
+        await ctx.response.defer()
         img = disnake.File(f"dalle_pics/{image_name}.png")
         await ctx.send(file=img)
                 
