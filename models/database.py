@@ -134,3 +134,31 @@ class Database:
     def hs_init_tag_count(self, user_id):
         self.cursor.execute(""" INSERT OR IGNORE INTO HSTag VALUES (?,?) """, (user_id, 0))
         self.connection.commit()
+
+
+    ### Image Voting ###
+    def add_user_vote_to_image(self, user_id, image_name, image_author, vote_int):
+
+        # init image vote into db 
+        self.cursor.execute(""" INSERT OR IGNORE INTO ImageVoting VALUES (?,?,?,?) """,(image_name,0,0,image_author))
+
+        #try to init user
+        #if user changes vote will throw integrity error, need to backtrack votes they did
+        try:
+            self.cursor.execute(""" INSERT INTO ImageVotingUsers VALUES (?,?,?) """, (user_id,image_name,vote_int))
+        except sqlite3.IntegrityError:
+            old_vote_int = self.cursor.execute(""" SELECT Vote FROM ImageVotingUsers WHERE UserId = ? AND ImageName = ? """,(user_id,image_name)).fetchone()[0]
+            self.cursor.execute(""" REPLACE INTO ImageVotingUsers VALUES (?,?,?)""",(user_id,image_name,vote_int))
+            
+            if old_vote_int == 1: #yes
+                self.cursor.execute(""" UPDATE ImageVoting SET VotesYes = VotesYes - 1 WHERE ImageName = ? """, (image_name,))
+            else:   #no
+                self.cursor.execute(""" UPDATE ImageVoting SET VotesNo = VotesNo - 1 WHERE ImageName = ? """, (image_name,))
+
+        #update total votes of image
+        if vote_int == 1: #yes
+            self.cursor.execute(""" UPDATE ImageVoting SET VotesYes = VotesYes + 1 WHERE ImageName = ? """, (image_name,))
+        else:   #no
+            self.cursor.execute(""" UPDATE ImageVoting SET VotesNo = VotesNo + 1 WHERE ImageName = ? """, (image_name,))
+
+        self.connection.commit()
