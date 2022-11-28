@@ -63,7 +63,7 @@ class ChatbotCog(commands.Cog):
         """
 
         r = openai.Completion.create(
-        model="text-davinci-002",
+        model="text-davinci-003",
         prompt=prompt,
         max_tokens = 150,
         temperature = random.random()
@@ -107,7 +107,7 @@ class ChatbotCog(commands.Cog):
 
         if randint(1,25) == 1:
             r = openai.Completion.create(
-            model="text-davinci-002",
+            model="text-davinci-003",
             prompt=prompt,
             max_tokens = 50,
             temperature = 0.9
@@ -163,7 +163,7 @@ class ChatbotCog(commands.Cog):
         message = f"""Write a {story_type} story about these things; {word1}, {word2}, {word3}."""
 
         r = openai.Completion.create(
-            model="text-davinci-002",
+            model="text-davinci-003",
             prompt=message,
             max_tokens = 250,
             temperature = 0.9,
@@ -202,7 +202,7 @@ class ChatbotCog(commands.Cog):
         await ctx.response.defer()
 
         r = openai.Completion.create(
-            model="text-davinci-002",
+            model="text-davinci-003",
             prompt=message,
             max_tokens = 1000,
             temperature = 0.9
