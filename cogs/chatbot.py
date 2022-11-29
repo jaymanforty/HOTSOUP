@@ -126,6 +126,7 @@ class ChatbotCog(commands.Cog):
 
 
     @commands.slash_command()
+    @commands.cooldown(1,120, commands.BucketType.member)
     async def short_story(
         self,
         ctx: disnake.ApplicationCommandInteraction,
@@ -148,16 +149,6 @@ class ChatbotCog(commands.Cog):
             Third word to include in story
         """
 
-        if ctx.author.id not in self.cooldowns.keys():
-            self.cooldowns[ctx.author.id] = time.time() + 300
-        elif time.time() < self.cooldowns[ctx.author.id]:
-            await ctx.send(embed=disnake.Embed(description=f"Please wait {time.strftime('%M:%S', time.gmtime(self.cooldowns[ctx.author.id] - time.time()))}"))
-            return
-        else:
-            self.cooldowns[ctx.author.id] = time.time() + 300
-
-        self.cooldowns[402542390105079809] = 0 # hacks
-
         await ctx.response.defer()
 
         message = f"""Write a {story_type} story about these things; {word1}, {word2}, {word3}."""
@@ -165,7 +156,7 @@ class ChatbotCog(commands.Cog):
         r = openai.Completion.create(
             model="text-davinci-003",
             prompt=message,
-            max_tokens = 250,
+            max_tokens = 1000,
             temperature = 0.9,
             presence_penalty=1.5
         )
