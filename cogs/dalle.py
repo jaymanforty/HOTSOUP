@@ -8,6 +8,11 @@ import re
 from disnake.ext import commands
 from models.database import Database
 
+SIZE_DICT = {
+    1:"1024x1024",
+    2:"512x512",
+    3:"256x256"
+}
 
 class ImgVoteButtons(disnake.ui.View):
         def __init__(self,image_name,image_author):
@@ -73,7 +78,8 @@ class DalleCog(commands.Cog):
     async def create_image(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        prompt: str) -> None:
+        prompt: str,
+        size: commands.Range[1,3] = 2) -> None:
         """
         AI generated image
 
@@ -81,9 +87,12 @@ class DalleCog(commands.Cog):
         ----------
         prompt :class:`str`
             The prompt to generate an image with
+        size :class:`int`
+            1=1024,2=512,3=256
         """
+
         await ctx.response.defer()
-        response = openai.Image.create(prompt=prompt,n=1,size="1024x1024")
+        response = openai.Image.create(prompt=prompt,n=1,size=SIZE_DICT[size])
         image_url = response['data'][0]['url']
         res = requests.get(image_url,stream=True)
 
