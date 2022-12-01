@@ -133,7 +133,8 @@ class ChatbotCog(commands.Cog):
         story_type: str,
         word1: str,
         word2: str,
-        word3: str):
+        word3: str,
+        story_subject: str = None):
         """
         AI powered short story
 
@@ -147,11 +148,13 @@ class ChatbotCog(commands.Cog):
             Second word to include in story
         word3: :class:`str`
             Third word to include in story
+        story_subject: :class:`str`
+            A guy falling off a ladder... etc.
         """
 
         await ctx.response.defer()
 
-        message = f"""Write a {story_type} story about these things; {word1}, {word2}, {word3}."""
+        message = f"""Write a {story_type} story{"" if not story_subject else f' about {story_subject}'} that contains the following subjects; {word1}, {word2}, {word3}."""
 
         r = openai.Completion.create(
             model="text-davinci-003",
