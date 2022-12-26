@@ -163,6 +163,27 @@ class Database:
 
         self.connection.commit()
 
+
+
+    ### Image Quiz ###
+    def get_image_quiz_score(self, user_id):
+        """ Returns the score for user in image quiz """
+        s = self.cursor.execute(""" SELECT Score From ImageQuiz Where UserId = ? """, (user_id,)).fetchone()
+        return s[0] if s else 0
+
+    def init_image_quiz_score(self, user_id):
+        """ Initializes user id into database """
+        self.cursor.execute(""" INSERT OR IGNORE INTO ImageQuiz VALUES (?,?) """, (user_id,0))
+        self.connection.commit()
+        return
+
+    def set_image_quiz_score(self, user_id, score):
+        """ Sets the image score """
+        self.init_image_quiz_score(user_id)
+        self.cursor.execute(""" UPDATE ImageQuiz SET Score = ? WHERE UserId = ?""",(score,user_id))
+        self.connection.commit()
+        return
+
     def get_top_5_images(self):
         rows = self.cursor.execute(""" SELECT * FROM ImageVoting ORDER BY VotesYes DESC, VotesNo ASC LIMIT 5 """).fetchall()
         print(rows)
