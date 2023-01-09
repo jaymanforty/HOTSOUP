@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from models.database import Database
 
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(message)s',datefmt="%m/%d/%Y %I:%M:%S %p",level=logging.INFO)
 
 #TODO: create local database for bot
 db = Database()
