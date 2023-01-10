@@ -10,6 +10,18 @@ from asyncio.exceptions import TimeoutError
 from disnake.ext import commands
 from models.database import Database
 
+
+PROMPTS = [
+    "A sketch of {0}",
+    "Cartoon of {0}",
+    "Watercolor drawing of {0}",
+    "{0}",
+    "Painting of {0}",
+    "Drawing of {0}",
+    "3D model of {0}"
+]
+
+
 class ImageQuizCog(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.InteractionBot = bot
@@ -18,7 +30,7 @@ class ImageQuizCog(commands.Cog):
         self.db = Database()
 
     @commands.slash_command()
-    async def imagequiz(
+    async def play(
         self,
         ctx: disnake.ApplicationCommandInteraction) -> None:
         """
@@ -43,15 +55,17 @@ class ImageQuizCog(commands.Cog):
 
         word = random.choice(words['words'])
 
-        print("starting image quiz with word: ", word)
-
+        prompt = random.choice(PROMPTS).format(word)
+        print("starting image quiz with: ", prompt)
+        
         #Generate an image using openai DALLE and save it under filename ** image_quiz_<word>.png **
-        response = openai.Image.create(prompt=f"A sketch of {word}",n=1,size="256x256")
+        response = openai.Image.create(prompt=prompt,n=1,size="256x256")
         image_url = response['data'][0]['url']
         res = requests.get(image_url,stream=True)
 
         with open(f"temp_imagequiz.png",'wb') as f:
             shutil.copyfileobj(res.raw,f)
+
 
         #Generate hint from the word
         num_hints = 0
@@ -65,11 +79,18 @@ class ImageQuizCog(commands.Cog):
         
         try:
             #Wait for a correct word or timeout and give second hint
-            message: disnake.Message = await self.bot.wait_for('message', check=word_check, timeout=120)
+            message: disnake.Message = await self.bot.wait_for('message', check=word_check, timeout=30)
         except TimeoutError:
-            #No one guessed the word yet so give second hint
-            await ctx.edit_original_message(embed=self.get_game_embed(f"**`{word}`**\nNo one guessed the word!"))
-            return
+            #No one guessed the word yet give a hint or two
+            await ctx.edit_original_message(embed=self.get_game_embed(self.get_hint(word,random.choice([1,2]))))
+
+            try:
+                #Wait for a correct word or timeout and give second hint
+                message: disnake.Message = await self.bot.wait_for('message', check=word_check, timeout=90)
+            except TimeoutError:
+                #No one guessed the word yet give a hint or two
+                await ctx.edit_original_message(embed=self.get_game_embed(f"**`{word}`**\nNo one guessed the word!"))
+                return
 
         #Award whoever guessed it
         total_wins = self.db.get_image_quiz_score(message.author.id) + 1

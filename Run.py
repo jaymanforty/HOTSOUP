@@ -18,16 +18,18 @@ db = Database()
 
 description = """Wow I'm a description!"""
 
+
 intents = disnake.Intents.default()
 intents.members = True
 intents.message_content = True
 
+commands_sync_flags = commands.CommandSyncFlags(sync_commands=True)
+
 #Define the bot
 bot = commands.InteractionBot(
     intents = intents,
-    descriptions = description,
     test_guilds = [491700910712684554],
-    sync_commands = True
+    command_sync_flags=commands_sync_flags
 )
 
 #Load the cogs into the bot from the directory
@@ -38,7 +40,7 @@ for c in os.listdir("cogs"):
 #log command
 @bot.event
 async def on_slash_command(ctx:disnake.ApplicationCommandInteraction):
-    logging.info(f" Command: {ctx.application_command.name} - User: {ctx.author.id}|{ctx.author.display_name}")
+    logging.info(f" Command: {ctx.application_command.name} - User: {ctx.author.id}|{ctx.author.name}#{ctx.author.discriminator}")
 
 #command_error
 @bot.event
