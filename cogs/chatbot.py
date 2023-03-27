@@ -210,11 +210,8 @@ class ChatbotCog(commands.Cog):
             return
 
         estimated_cost = r['usage']['total_tokens'] * (4/1000)
-        embed_str = f"""
-        {ctx.author.mention} - {message}
-
-        {response_text}
-        """
+        embed_str = f"{ctx.author.mention} - {message}\n"
+        embed_str += f"{response_text}"
 
         await ctx.send(embed=disnake.Embed(description=embed_str).set_footer(text=f"¢{estimated_cost:.2f}"))
 
