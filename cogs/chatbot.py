@@ -8,6 +8,7 @@ from disnake.ext import commands
 
 from constants import ALLOWED_CHANNELS
 
+
 class ChatbotCog(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot: commands.InteractionBot = bot
