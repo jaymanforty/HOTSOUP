@@ -1,7 +1,6 @@
 from colorsys import hls_to_rgb, rgb_to_hls
 import disnake
 import random as rnd
-import time
 
 from PIL import Image
 from disnake.ext import commands
@@ -39,7 +38,7 @@ class RandomColor(commands.Cog):
     '''
 
    
-
+    # /randomcolor
     @commands.slash_command()
     async def randomcolor(
         self,
@@ -63,6 +62,10 @@ class RandomColor(commands.Cog):
         e.set_image(file=img)
         await ctx.send(embed=e)
 
+    ############
+    ### Util ###
+    ############
+    
     def get_complimentary_rgb(self, r,g,b):
         h,l,s = rgb_to_hls(r/255,g/255,b/255)
         print(h,l,s)

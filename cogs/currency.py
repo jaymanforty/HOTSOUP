@@ -1,36 +1,22 @@
-import disnake
 import random as rnd
 import asyncio
+from typing import List
 
+import disnake
 from disnake import Embed
 from disnake.ext import commands, tasks
-from models.database import Database
+from sqlalchemy.future import select
 
-HS_ALLOWED_CHANNELS = [1007794808812740729,798935679366594573]
-#HS_EMOJI_ID = 799461124248436818
-HS_EMOJI_ID = 1015513642478870558
-LOTTERY_COST = 10
-LOTTERY_RANGE = range(1,36)
-LOTTERY_BALL_RANGE = range(1,4)
-LOTTERY_WINNING_DICT = {
-    (0,1): 1,           # 1/3
-    (1,1): 1,           # 1/105
-    (2,1): 10,          # 1/1,785
-    (3,0): 10,          # 1/6,545
-    (3,1): 500,         # 1/19,635
-    (4,0): 1000,        # 1/52,630
-    (4,1): 2500,        # 1/157,080
-    (5,0): 5000,        # 1/324,632
-    (5,1): "jackpot"
-}
+from db import DB, async_session, HSPoints
+from exc import CustomCommandError
+from constants import HS_EMOJI_ID, ALLOWED_CHANNELS
 
 class CurrencyCog(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot: commands.InteractionBot = bot
-        self.db = Database()
         self.last_person_broke = None
         self.start_hs_random_message_task.start()
-        self.cooldowns = {}
+        self.HS_EMOJI = bot.get_emoji(HS_EMOJI_ID)
 
     @tasks.loop(count=1)
     async def start_hs_random_message_task(self) -> None:
@@ -39,264 +25,116 @@ class CurrencyCog(commands.Cog):
         await self.start_random_message_sender()
 
     
+    # /leaderboard
     @commands.slash_command()
-    async def hs_leaderboard(
+    async def leaderboard(
         self,
         ctx: disnake.ApplicationCommandInteraction) -> None:
         """
         How do you compare to the other users?
         """
-        users = self.db.hs_get_all()
+        async with async_session() as session:
+            db = DB(session)
 
-        users = sorted(users, key=lambda u: u[1], reverse=True)
-        ldr_brd = ""
-        counter = 1
-        for u in users:
-            ldr_brd += f"{counter}: <@{u[0]}> - {self.HS_EMOJI}**{u[1]}**  |  +{u[2]}  |  -{u[3]}\n"
-            counter += 1
-        await ctx.send(embed=Embed(description=ldr_brd))
+            q = await db.db_session.execute(select(HSPoints).order_by(HSPoints.points.desc()))
+            all_u: List[HSPoints] = q.scalars().all()
 
+            s = "HS! Points Leaderboard\n\n**User | Total Points | Points Gained | Points Lost**\n\n"
 
+            for i,u in enumerate(all_u):
+                s += f"{i+1}: {u.mention} | {self.HS_EMOJI}**{u.points}** | +{u.points_won} | -{u.points_lost}\n"
+
+        await ctx.send(embed=Embed(description=s))
+
+    # /points
     @commands.slash_command()
-    async def hs_points(
+    async def points(
         self,
         ctx: disnake.ApplicationCommandInteraction):
         """
         How many HS! points you have 
         """
-        total_str = f"Total Points Won: {self.HS_EMOJI}{self.db.hs_get_total_points_won(ctx.author.id)}\nTotal Points Lost: {self.HS_EMOJI}{self.db.hs_get_total_points_lost(ctx.author.id)}"
-        await ctx.send(embed=Embed(description=f"{self.HS_EMOJI}{self.db.hs_get_points(ctx.author.id)}\n{total_str}"), ephemeral=True)
-    
-    
+        async with async_session() as session:
+            db = DB(session)
+            u = await db.get_hs_points_obj(ctx.author.id)
+            
+            s = f"{u.mention} | {self.HS_EMOJI}**{u.points}** | +{u.points_won} | -{u.points_lost}\n"
+            s += f"`/double - Wins: {u.double_wins} | Losses: {u.double_losses}`"
+
+        await ctx.send(embed=Embed(description=s), ephemeral=True)
+
+    # /collect    
     @commands.slash_command()
-    async def hs_collect(
+    async def collect(
         self,
         ctx: disnake.ApplicationCommandInteraction) -> None:
         """
         Need a handout? Take 5 HS! points on the house.
         """
-        if self.db.hs_get_points(ctx.author.id) > 0: 
-            await ctx.send(embed=Embed(description="You aren't broke yet!"),ephemeral=True)
-            return
+        async with async_session() as session:
+            async with session.begin():
+                db = DB(session)
 
-        if self.last_person_broke == ctx.author:
-            await ctx.send(embed=disnake.Embed(description=f"One of those days... take +{self.HS_EMOJI}50"),ephemeral=True)
-            self.db.hs_add_points(ctx.author.id, 100)
-        else:
-            self.last_person_broke = ctx.author
-            self.db.hs_add_points(ctx.author.id, 50)
-            await self.hs_points(ctx)
+                if ctx.author.id == self.last_person_broke:
+                    points = 100
+                else:
+                    points = 50
 
+                self.last_person_broke = ctx.author.id
+
+                u = await db.get_hs_points_obj(ctx.author.id)
+                if u.points > 0:
+                    raise CustomCommandError("Cannot collect if you have points already!")
+                
+                u.points += points
+
+                s = f"You now have {self.HS_EMOJI}{u.points}."
+
+        await ctx.send(embed=Embed(description=s), ephemeral=True)
+
+    # /double
     @commands.slash_command()
-    async def hs_double(
+    async def double(
         self,
         ctx: disnake.ApplicationCommandInteraction) -> None:
         """
         50/50 to lose all your points or double your points...
         """
-        points = self.db.hs_get_points(ctx.author.id)
 
-        if not points > 0:
-            await ctx.send(embed=Embed(description="Can't double nothing... try `/hs_collect`"),ephemeral=True)
-            return
+        async with async_session() as session:
+            async with session.begin():
+                db = DB(session)
 
-        reward = points if 1 == rnd.randint(1,2) else 0
+                u = await db.get_hs_points_obj(ctx.author.id)
 
-        #Total points lost / won
-        if reward > 0: #points won
-            self.db.hs_add_total_points_won(ctx.author.id, reward)
-        else:   #points lost
-            self.db.hs_add_total_points_lost(ctx.author.id, points)
-
-        points = self.db.hs_add_points(ctx.author.id, reward)
-
-        if reward > 0:
-            await ctx.send(embed=Embed(description=f"{ctx.author.mention} took a chance and now has {self.HS_EMOJI}**{points}**!"))
-        else:
-            self.db.hs_sub_points(ctx.author.id,points)
-            await ctx.send(embed=Embed(description=f"{ctx.author.mention} took a chance and lost {self.HS_EMOJI}**{points}** :("))
-
-        
-    @commands.slash_command()
-    async def hs_dice(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        amount: int,
-        guess: commands.Range[1,6]) -> None:
-        """
-        Rolls 6 dice. Payout = dice*bet
-
-        Parameters
-        ----------
-        amount: :class:`int`
-            The amount of HS! points to bet
-        guess: :class:`int`
-            The number to guess
-        """
-
-        if not await self.hs_sub_points(ctx, amount): return            
-
-        rolls = [str(self.roll_dice()) for x in range(6)]
-
-        payout = rolls.count(str(guess))*amount
-        points = self.db.hs_add_points(ctx.author.id, payout)
-
-        #Total points lost / won
-        if payout > 0: #points won
-            self.db.hs_add_total_points_won(ctx.author.id, payout)
-        else:   #points lost
-            self.db.hs_add_total_points_lost(ctx.author.id, amount)
-
-        if payout > 0:
-            await ctx.send(embed=disnake.Embed(description=f"You bet **{amount}**\nYou guess **{guess}**.\nYou rolled {','.join(rolls)}\n\nYou win {self.HS_EMOJI}**{payout}**! ({self.HS_EMOJI}{points})"))
-        else:
-            await ctx.send(embed=disnake.Embed(description=f"You bet **{amount}**\nYou guess **{guess}**.\nYou rolled {','.join(rolls)}\n\nYou gambled away {self.HS_EMOJI}**{amount}**... ({self.HS_EMOJI}{points})"))
-
-
-    @commands.slash_command()
-    async def hs_lottery_info(
-        self,
-        ctx: disnake.ApplicationCommandInteraction) -> None:
-        """
-        Info about HS! Lottery minigame
-        """
-
-        info = f"""
-        Current Jackpot: {self.HS_EMOJI}{self.db.hs_get_lotto_jackpot()}
-        Costs 10 HS! points to play per ticket
-
-        The bot then simulates however many lottery tickets [1,25] you decide. 
-        Payout is determined on how many numbers match.
-        Regular numbers are picked [1,35] and the special number is picked [1,3]
-
-        Matches = (Regular Numbers, Special Number) -> (5,1) is jackpot
-        ```
-        Result - payout - odds
-        (0,1): 1            1 in 3
-        (1,1): 5            1 in 105
-        (2,1): 10           1 in 1,785
-        (3,0): 50           1 in 6,545
-        (3,1): 250          1 in 19,635
-        (4,0): 1000         1 in 52,630
-        (4,1): 2500         1 in 157,080
-        (5,0): 5000         1 in 324,632
-        (5,1): jackpot      1 in 973,896
-        ```
-        Jackpot is increased by 10 every ticket with a default of 10000. 
-        Also due to my laziness in coding, if multiple tickets win jackpot they'll all be awarded the jackpot
-        """
-        await ctx.send(embed=Embed(description=info))
- 
- 
-    @commands.slash_command()
-    async def hs_lottery(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        plays: commands.Range[1,100] = 1) -> None:
-        """
-        Simulate a lottery ticket, costs 5 HS! points. Entries add 5 for every ticket to jackpot
-        """
-        await ctx.response.defer()
-
-        jackpot = self.db.hs_get_lotto_jackpot()
-        if not jackpot:
-            await ctx.send("No jackpot set yet")
-            return
-
-        if not await self.hs_sub_points(ctx, LOTTERY_COST*plays): return         
-
-        lotto_numbers = sorted(rnd.sample(LOTTERY_RANGE,5))
-        lotto_ball = rnd.choice(LOTTERY_BALL_RANGE)
-        lotto = {"user_tickets": {}, "lotto_nums":lotto_numbers,"lotto_ball":lotto_ball}
-
-        for i in range(0,plays):
-            lotto["user_tickets"][i] = {"nums": sorted(rnd.sample(LOTTERY_RANGE,5)), "ball":rnd.choice(LOTTERY_BALL_RANGE)}
-
-        lotto = self.do_lotto_matches(lotto)
-        winnings = self.get_lotto_winnings(lotto)
-        points = self.db.hs_add_points(ctx.author.id, winnings)
-        ticket_str = self.get_lotto_ticket_str(points, winnings, lotto)
-        
-        net_winnings = winnings-(len(lotto["user_tickets"])*LOTTERY_COST)
-
-        #Total points lost / won
-        if net_winnings > 0: #points won
-            self.db.hs_add_total_points_won(ctx.author.id, net_winnings)
-        else:   #points lost
-            self.db.hs_add_total_points_lost(ctx.author.id, net_winnings)
-
-        await ctx.send(embed=Embed(description=ticket_str))
-    
-
-    ### UTIL ###
-    def get_lotto_ticket_str(self, total_points: int, winnings: int, lotto: dict) -> str:
-        """ Returns a formatted string displaying ticket info """
-        user_tickets = lotto["user_tickets"]
-        master_str = f"""
-        **Winning Numbers**
-        `{",".join([str(i).zfill(2) for i in lotto["lotto_nums"]])} [{lotto["lotto_ball"]}]`
-
-        **Your Numbers**
-        ```{"{0}".join([self._get_lotto_ticket_str(user_tickets[t]) for t in user_tickets])}```
-
-        **Net Winnings**
-        {self.HS_EMOJI}**{winnings-(len(user_tickets)*LOTTERY_COST):+}** | {self.HS_EMOJI}{total_points}
-
-        Jackpot is now {self.HS_EMOJI}**{self.db.hs_get_lotto_jackpot()}**""".format("\n")
-        return master_str
-
-
-    def _get_lotto_ticket_str(self, ticket: dict) -> str:
-        """ Returns a single line string for the ticket """
-        return f"{','.join([str(i).zfill(2) for i in ticket['nums']])} [{ticket['ball']}] - {ticket['winning_tuple']} - {ticket['payout']}"
-
-
-    def get_lotto_winnings(self, lotto: dict) -> int:
-        winnings = 0
-        for t in lotto["user_tickets"]:
-            winnings += lotto["user_tickets"][t]["payout"]
-        return winnings
-
-    def do_lotto_matches(self, lotto: dict) -> dict:
-        """ Returns a dict with added properties to ticket dicts doing winning tuple and payout """
-        jackpot = self.db.hs_get_lotto_jackpot()
-        for t in lotto["user_tickets"]:
-
-            user_nums = lotto["user_tickets"][t]["nums"]
-            user_ball = lotto["user_tickets"][t]["ball"]
-
-            white_matches = len(set(user_nums).intersection(set(lotto["lotto_nums"])))
-            ball_match = 1 if lotto["lotto_ball"] == user_ball else 0
-            winning_tuple = (white_matches, ball_match)
-            payout = 0
-            
-            try:
-                payout = LOTTERY_WINNING_DICT[winning_tuple]
-                if payout == "jackpot":
-                    self.db.hs_update_lotto_jackpot(10000)
-                    payout = jackpot
+                if u.points == 0:
+                    raise CustomCommandError("Can't double nothing...")
+                
+                if rnd.randint(0,1) == 0:
+                    u.points_won += u.points
+                    s = f"{u.mention} gambled it all and won {self.HS_EMOJI}{u.points}!"
+                    u.points *= 2
+                    u.double_wins += 1
                 else:
-                    jackpot += LOTTERY_COST
+                    u.points_lost += u.points
+                    s = f"{u.mention} isn't very good at this and lost {self.HS_EMOJI}{u.points}..."
+                    u.points = 0
+                    u.double_losses += 1
 
-            except KeyError:
-                jackpot += LOTTERY_COST
+        s += f" ({self.HS_EMOJI}{u.points})"
+        await ctx.send(embed=Embed(description=s))
 
-            lotto["user_tickets"][t]["winning_tuple"] = winning_tuple
-            lotto["user_tickets"][t]["payout"] = payout
-        self.db.hs_update_lotto_jackpot(jackpot)
-        return lotto
-
-    def roll_dice(self):
-        return rnd.randint(1,6)
-
+    ############
+    ### Util ###
+    ############
     async def start_random_message_sender(self) -> None:
         """ After X amount of time send a random message that the user can react on to get HS! points """
 
-        time_before_next_message = rnd.randint(1800,21600)
+        time_before_next_message = rnd.randint(0, 81600)
         print(f"Next random message in {time_before_next_message} seconds.")
         await asyncio.sleep(time_before_next_message)
 
-        channel: disnake.TextChannel = self.bot.get_channel(rnd.choice(HS_ALLOWED_CHANNELS))
+        channel: disnake.TextChannel = self.bot.get_channel(789593992236236820)
         
         #Select random amount of points to award. 25->50->100->500
         random_int = rnd.randint(1,50)
@@ -316,7 +154,24 @@ class CurrencyCog(commands.Cog):
             return reaction.emoji == self.HS_EMOJI and reaction.message == hs_msg and user.id != self.bot.user.id
 
         reaction, r_user = await self.bot.wait_for('reaction_add', check=hs_check)
-        self.db.hs_add_points(r_user.id,points)
+
+        async with async_session() as session:
+            async with session.begin():
+                db = DB(session)
+                try:
+                    u = await db.get_hs_points_obj(r_user.id)
+                    u.points += points
+                except CustomCommandError:
+                    u = HSPoints(
+                        user_id = r_user.id,
+                        points = points,
+                        points_won = 0,
+                        points_lost = 0,
+                        double_wins = 0,
+                        double_losses = 0
+                    )
+                    await db.add(u)
+                
         await hs_msg.delete()
         await self.start_random_message_sender()
 

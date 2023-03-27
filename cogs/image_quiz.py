@@ -9,7 +9,6 @@ import re
 from difflib import SequenceMatcher
 from asyncio.exceptions import TimeoutError
 from disnake.ext import commands
-from models.database import Database
 
 PROMPTS = [
     "Draw a cartoon of {0}",
@@ -18,13 +17,11 @@ PROMPTS = [
     "A photograph of {0}"
 ] 
 
-
 class ImageQuizCog(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.InteractionBot = bot
         self.word_api_key = os.getenv("WORDNIK_API_KEY")
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
-        self.db = Database()
         self.active_games = {}
 
     @commands.Cog.listener('on_message')
@@ -45,6 +42,7 @@ class ImageQuizCog(commands.Cog):
         if SequenceMatcher(None, guess, word).ratio() > 0.8:
             await message.reply(f"{guess} is close!")
 
+    # /play
     @commands.slash_command()
     async def play(
         self,
@@ -100,9 +98,8 @@ class ImageQuizCog(commands.Cog):
     
         if correct:
             #Award whoever guessed it
-            total_wins = self.db.get_image_quiz_score(message.author.id) + 1
-            self.db.set_image_quiz_score(message.author.id, total_wins)
-            await message.reply(f"{message.author.name} has guessed the word! It was **{word}**!\nTotal Wins: **{total_wins}**")
+            #TODO: Database stuff
+            await message.reply(f"{message.author.name} has guessed the word! It was **{word}**!")
         
         e.description = f"**GAME FINISHED**\n**`{word}`**"
         img = disnake.File(f"image_quiz_pics/{ctx.channel_id}.png")
@@ -113,6 +110,7 @@ class ImageQuizCog(commands.Cog):
         self.active_games.pop(ctx.channel_id)
         os.remove(f"image_quiz_pics/{ctx.channel_id}.png")
 
+    #TODO: /imagequiz_lb
     @commands.slash_command()
     async def imagequiz_lb(
         self,
@@ -178,6 +176,9 @@ class ImageQuizCog(commands.Cog):
         ##NOTE: Image URLs from openai expire after 15 minutes. 
         #In order to preserve the images we
         #   save to disk and then upload to discord independently
+        if not os.path.exists("image_quiz_pics"):
+            os.mkdir('image_quiz_pics')
+            
         with open(f"image_quiz_pics/{channel_id}.png",'wb') as f:
             shutil.copyfileobj(res.raw,f)
 

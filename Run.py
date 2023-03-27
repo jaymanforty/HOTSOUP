@@ -7,14 +7,10 @@ from os.path import exists
 from disnake.ext import commands
 from dotenv import load_dotenv
 
-from models.database import Database
+from db.config import engine, Base
 
 load_dotenv()
 logging.basicConfig(format='%(asctime)s %(message)s',datefmt="%m/%d/%Y %I:%M:%S %p",level=logging.INFO)
-
-#TODO: create local database for bot
-db = Database()
-
 
 description = """Wow I'm a description!"""
 
@@ -42,25 +38,16 @@ for c in os.listdir("cogs"):
 async def on_slash_command(ctx:disnake.ApplicationCommandInteraction):
     logging.info(f" Command: {ctx.application_command.name} - User: {ctx.author.id}|{ctx.author.name}#{ctx.author.discriminator}")
 
-#command_error
-@bot.event
-async def on_slash_command_error(ctx:disnake.ApplicationCommandInteraction, error):
-    if isinstance(error, commands.errors.CheckFailure):
-        await ctx.send(embed=disnake.Embed(description="You are not allowed to use this"), ephemeral=True)
-
-    elif isinstance(error, commands.errors.CommandOnCooldown):
-        await ctx.send(embed=disnake.Embed(description=f"You are on cooldown. Try again after `{str(datetime.timedelta(seconds = round(error.retry_after)))}`"), ephemeral=True)
-
-    else:
-        await ctx.channel.send(error)
-        logging.error(f"Unhandled Exception from command: {ctx.application_command}", exc_info=error)
-
-    
-        
 
 #on_ready event
 @bot.event
 async def on_ready():
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        bot.dispatch('db_ready')
+        logging.info('Database initialized')
+
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print( '-------------------------------------------')
 

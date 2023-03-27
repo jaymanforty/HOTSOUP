@@ -5,15 +5,14 @@ import random
 import time
 from random import randint
 from disnake.ext import commands
-from models.database import Database
+
+from constants import ALLOWED_CHANNELS
 
 class ChatbotCog(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot: commands.InteractionBot = bot
-        self.db = Database()
         openai.api_key = os.getenv("OPENAI_API_KEY")
         self.last_user_id = None
-        self.allowed_channels = [798935679366594573,1007794808812740729,798935679366594574,789593992236236820]
         self.cooldowns = {}
 
     @commands.Cog.listener('on_reaction_add')
@@ -33,9 +32,8 @@ class ChatbotCog(commands.Cog):
         message: disnake.Message) -> None:
 
         if message.author.id == self.bot.user.id: return
-        if f"<@{1013037451276722227}>" not in message.content: return
-        if message.channel.id not in self.allowed_channels: return
-        c = randint(300,900)
+        if self.bot.user.mention not in message.content: return
+        if message.channel.id not in ALLOWED_CHANNELS: return
 
         try:
             if self.cooldowns["question"] > time.time(): return
@@ -44,7 +42,7 @@ class ChatbotCog(commands.Cog):
             self.cooldowns["question"] = time.time()
 
         prompt = f"""
-        Soupy is an all knowing bot that responds to questions and reluctantly responds with sarcastic answers:
+        Soupy is an all knowing bot that responds to questions and reluctantly responds without providing a direct answer :
 
         You: How many pounds are in a kilogram? 
         Soupy: There are 2.2 pounds in a kilogram. This again? Try to be more original...
@@ -84,7 +82,7 @@ class ChatbotCog(commands.Cog):
     @commands.Cog.listener('on_message')
     async def openai_message_listener(self, msg: disnake.Message):
         
-        if msg.channel.id not in self.allowed_channels: return
+        if msg.channel.id not in ALLOWED_CHANNELS: return
         if msg.author.id == self.bot.user.id: return
         if "?" in msg.content: return
         if self.last_user_id == msg.author.id: return #avoids users spamming messages to get a response
@@ -124,7 +122,7 @@ class ChatbotCog(commands.Cog):
             print("cost ~ ¢", estimated_cost)
             await msg.reply(response_text)
 
-
+    # /short_story
     @commands.slash_command()
     @commands.cooldown(1,120, commands.BucketType.member)
     async def short_story(
@@ -177,6 +175,7 @@ class ChatbotCog(commands.Cog):
 
         await ctx.send(embed=disnake.Embed(description=embed_str).set_footer(text=f"{total_tokens} - ¢{total_tokens * (4/1000):.2f}"))
 
+    # /say
     @commands.is_owner()
     @commands.slash_command()
     async def say(

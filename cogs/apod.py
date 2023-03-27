@@ -11,7 +11,7 @@ class APODCod(commands.Cog):
         self.bot: commands.InteractionBot = bot
         self.api_key = os.getenv("NASA_API_KEY")
 
-
+    # /apod
     @commands.slash_command()
     async def apod(
         self,

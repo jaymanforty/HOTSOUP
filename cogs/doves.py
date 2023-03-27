@@ -1,6 +1,5 @@
 import disnake
 import random as rnd
-import time
 from disnake.ext import commands
 
 
@@ -8,6 +7,7 @@ class DovesCog(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot: commands.InteractionBot = bot
 
+    # /doves
     @commands.slash_command()
     @commands.cooldown(1,86400, commands.BucketType.member)
     async def doves(
