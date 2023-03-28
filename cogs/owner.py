@@ -37,7 +37,7 @@ class OwnerCog(commands.Cog):
             model="text-davinci-003",
             prompt=s,
             max_tokens = 150,
-            temperature = random.random()
+            temperature = random.randint(60,100)/100
             )
         
         response_text = r['choices'][0]['text'].strip()
