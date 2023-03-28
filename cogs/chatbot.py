@@ -203,14 +203,14 @@ class ChatbotCog(commands.Cog):
         )
 
         response_text = r['choices'][0]['text']
-
+        print(response_text)
         output_label = self.get_filter_label(response_text)
         if output_label == 2:
             await ctx.send(embed=disnake.Embed(description="Too toxic!"))
             return
 
         estimated_cost = r['usage']['total_tokens'] * (4/1000)
-        embed_str = f"{ctx.author.mention} - {message}\n"
+        embed_str = f"{ctx.author.mention} - {message}"
         embed_str += f"{response_text}"
 
         await ctx.send(embed=disnake.Embed(description=embed_str).set_footer(text=f"¢{estimated_cost:.2f}"))
