@@ -6,7 +6,8 @@ from disnake import ApplicationCommandInteraction, User, Embed
 import openai
 
 
-from db import async_session, DB
+from db import async_session, DB, HSPoints
+from exc import CustomCommandError
 from constants import HS_EMOJI_ID
 
 class OwnerCog(commands.Cog):
@@ -40,8 +41,19 @@ class OwnerCog(commands.Cog):
             async with session.begin():
                 db = DB(session)
 
-                u = await db.get_hs_points_obj(user.id)
-
+                try:
+                    u = await db.get_hs_points_obj(user.id)
+                except CustomCommandError:
+                    u = HSPoints(
+                        user_id = ctx.author.id,
+                        points = 0,
+                        points_won = 0,
+                        points_lost = 0,
+                        double_wins = 0,
+                        double_losses = 0
+                    )
+                    await db.add(u)
+                    
                 u.points = points
 
         await ctx.send(embed=Embed(description=f"Set {user.mention} points to {self.HS_EMOJI}**{u.points}**"), ephemeral=True)
