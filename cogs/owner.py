@@ -45,7 +45,7 @@ class OwnerCog(commands.Cog):
                     u = await db.get_hs_points_obj(user.id)
                 except CustomCommandError:
                     u = HSPoints(
-                        user_id = ctx.author.id,
+                        user_id = user.id,
                         points = 0,
                         points_won = 0,
                         points_lost = 0,
@@ -53,7 +53,7 @@ class OwnerCog(commands.Cog):
                         double_losses = 0
                     )
                     await db.add(u)
-                    
+
                 u.points = points
 
         await ctx.send(embed=Embed(description=f"Set {user.mention} points to {self.HS_EMOJI}**{u.points}**"), ephemeral=True)
