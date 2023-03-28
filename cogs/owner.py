@@ -2,20 +2,51 @@ import os
 import random
 
 from disnake.ext import commands
-from disnake import ApplicationCommandInteraction
+from disnake import ApplicationCommandInteraction, User, Embed
 import openai
 
 
 from db import async_session, DB
-
+from constants import HS_EMOJI_ID
 
 class OwnerCog(commands.Cog):
 
     def __init__(self, bot: commands.InteractionBot) -> None:
         self.bot = bot
         openai.api_key = os.getenv("OPENAI_API_KEY")
+        self.HS_EMOJI = bot.get_emoji(HS_EMOJI_ID)
 
 
+    # /setpoints
+    @commands.is_owner()
+    @commands.slash_command()
+    async def setpoints(
+            self,
+            ctx: ApplicationCommandInteraction,
+            user: User,
+            points: int) -> None:
+        """
+        Command to manually set a user's points
+
+        Parameters
+        ----------
+        user: :class:`User`
+            The user to set points of
+        points: :class:`int`
+            The amount of points to set them to
+        """
+
+        async with async_session() as session:
+            async with session.begin():
+                db = DB(session)
+
+                u = await db.get_hs_points_obj(user.id)
+
+                u.points = points
+
+        await ctx.send(embed=Embed(description=f"Set {user.mention} points to {self.HS_EMOJI}**{u.points}**"), ephemeral=True)
+
+    # /test
     @commands.is_owner()
     @commands.slash_command()
     async def test(
@@ -31,7 +62,7 @@ class OwnerCog(commands.Cog):
             for k in m:
                 s += f"{k}: {m[k]}\n"
 
-        s += "{self.bot.user.name}: "
+        s += f"{self.bot.user.name}: "
 
         r = openai.Completion.create(
             model="text-davinci-003",
