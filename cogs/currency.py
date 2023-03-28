@@ -82,7 +82,19 @@ class CurrencyCog(commands.Cog):
 
                 self.last_person_broke = ctx.author.id
 
-                u = await db.get_hs_points_obj(ctx.author.id)
+                try:
+                    u = await db.get_hs_points_obj(ctx.author.id)
+                except CustomCommandError:
+                    u = HSPoints(
+                        user_id = ctx.author.id,
+                        points = 0,
+                        points_won = 0,
+                        points_lost = 0,
+                        double_wins = 0,
+                        double_losses = 0
+                    )
+                    await db.add(u)
+
                 if u.points > 0:
                     raise CustomCommandError("Cannot collect if you have points already!")
                 
