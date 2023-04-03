@@ -146,7 +146,7 @@ class CurrencyCog(commands.Cog):
         print(f"Next random message in {time_before_next_message} seconds.")
         await asyncio.sleep(time_before_next_message)
 
-        channel: disnake.TextChannel = self.bot.get_channel(789593992236236820)
+        channel: disnake.TextChannel = self.bot.get_channel(rnd.choice(ALLOWED_CHANNELS))
         
         #Select random amount of points to award. 25->50->100->500
         random_int = rnd.randint(1,50)
@@ -187,16 +187,6 @@ class CurrencyCog(commands.Cog):
         await hs_msg.delete()
         await self.start_random_message_sender()
 
-
-    async def hs_sub_points(self, ctx: disnake.ApplicationCommandInteraction, amount: int):
-        """ Checks if user has enough points for specified store item and subtracts or tells them they don't have enough """
-        points = self.db.hs_get_points(ctx.author.id)
-        if points >= amount:
-            self.db.hs_sub_points(ctx.author.id, amount)
-            return True
-        else:
-            await ctx.send(embed=Embed(description=f"You don't have enough {self.HS_EMOJI}!"), ephemeral=True)
-            return False
 
 def setup(bot):
     bot.add_cog(CurrencyCog(bot))

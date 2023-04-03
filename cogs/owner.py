@@ -1,7 +1,7 @@
 import os
 import random
 
-from disnake.ext import commands
+from disnake.ext import commands, tasks
 from disnake import ApplicationCommandInteraction, User, Embed
 import openai
 
@@ -15,8 +15,13 @@ class OwnerCog(commands.Cog):
     def __init__(self, bot: commands.InteractionBot) -> None:
         self.bot = bot
         openai.api_key = os.getenv("OPENAI_API_KEY")
-        self.HS_EMOJI = bot.get_emoji(HS_EMOJI_ID)
+        self.setup.start()
 
+    @tasks.loop(count=1)
+    async def setup(self):
+
+        await self.bot.wait_for('on_ready')
+        self.HS_EMOJI = self.bot.get_emoji(HS_EMOJI_ID)
 
     # /setpoints
     @commands.is_owner()

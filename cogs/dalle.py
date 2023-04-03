@@ -41,6 +41,5 @@ class DalleCog(commands.Cog):
         img = disnake.File(f"dalle_pic.png")
         await ctx.send(file=img)
 
-
 def setup(bot):
     bot.add_cog(DalleCog(bot))
