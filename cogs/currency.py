@@ -143,7 +143,7 @@ class CurrencyCog(commands.Cog):
     async def start_random_message_sender(self) -> None:
         """ After X amount of time send a random message that the user can react on to get HS! points """
 
-        time_before_next_message = rnd.randint(0, 81600)
+        time_before_next_message = rnd.randint(0, 81600//2) # every 12 hours 
 
         me = await self.bot.fetch_user(402542390105079809)
 
