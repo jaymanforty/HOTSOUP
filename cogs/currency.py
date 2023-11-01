@@ -150,8 +150,8 @@ class CurrencyCog(commands.Cog):
         hms = str(datetime.timedelta(seconds=round(time_before_next_message)))
         hms = f"{hms.split(':')[0]}h:{hms.split(':')[1]}m:{hms.split(':')[2]}s"
 
-        await me.send(f"Next random message in {hms} seconds.")
-        print(f"Next random message in {hms} seconds.")
+        #await me.send(f"Next random message in {hms} seconds.")
+        #print(f"Next random message in {hms} seconds.")
         
         await asyncio.sleep(time_before_next_message)
         channel: disnake.TextChannel = self.bot.get_channel(rnd.choice(ALLOWED_CHANNELS))

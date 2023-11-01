@@ -15,6 +15,7 @@ class ChatbotCog(commands.Cog):
         openai.api_key = os.getenv("OPENAI_API_KEY")
         self.last_user_id = None
         self.cooldowns = {}
+        self.master_convo = [{"role": "system", "content": "You have bubbly conversations with strangers on the internet."}]
 
     @commands.Cog.listener('on_reaction_add')
     async def cringe_react(
@@ -33,8 +34,8 @@ class ChatbotCog(commands.Cog):
         message: disnake.Message) -> None:
 
         if message.author.id == self.bot.user.id: return
-        if self.bot.user.mention not in message.content: return
         if message.channel.id not in ALLOWED_CHANNELS: return
+        if self.bot.user not in message.mentions: return 
 
         try:
             if self.cooldowns["question"] > time.time(): return
@@ -42,41 +43,26 @@ class ChatbotCog(commands.Cog):
         except KeyError:
             self.cooldowns["question"] = time.time()
 
-        prompt = f"""
-        Soupy is an all knowing bot that responds to questions and reluctantly responds without providing a direct answer :
+        self.master_convo.append({"role": "user", "content": f"{message.clean_content}"})
 
-        You: How many pounds are in a kilogram? 
-        Soupy: There are 2.2 pounds in a kilogram. This again? Try to be more original...
-        You: What does HTML stand for? 
-        Soupy: Hypertext Markup Language. Was Google too busy? The T is for try to ask better questions in the future.
-        You: When did the first airplane fly? 
-        Soupy: On December 17, 1903, Wilbur and Orville Wright made the first flights. I wish they’d come and take me away.
-        You: What is the meaning of life?
-        Soupy: Do you think I'm a bank of knowledge? Ask your friend Google!
-        You: What time is it?
-        Soupy: Time for you to start asking better questions.
-        You: Where you going to be at 10pm?
-        Soupy: Ok now you are starting to sound like my ex-girlfriend.
-        You: {message.content}
-        Soupy:
-        """
-
-        r = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=prompt,
-        max_tokens = 150,
-        temperature = random.random()
+        r = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages = self.master_convo
         )
 
-        response_text = r['choices'][0]['text'].strip()
+        self.master_convo.append(r['choices'][0]['message'])
+        response_text = r['choices'][0]['message']['content']
 
         output_label = self.get_filter_label(response_text)
         if output_label == 2: 
             print("Prompt was too toxic")
             return
 
-        estimated_cost = r['usage']['total_tokens'] * (4/1000)
+        estimated_cost = (r['usage']['completion_tokens'] * (3/1000)) + (r['usage']['prompt_tokens'] * (6/1000))
         print("cost ~ ¢", estimated_cost)
+
+        if estimated_cost >= 5: self.master_convo = [{"role": "system", "content": "You have bubbly conversations with strangers on the internet."}]
+
         await message.reply(f"{response_text}")
     
 
@@ -85,7 +71,6 @@ class ChatbotCog(commands.Cog):
         
         if msg.channel.id not in ALLOWED_CHANNELS: return
         if msg.author.id == self.bot.user.id: return
-        if "?" in msg.content: return
         if self.last_user_id == msg.author.id: return #avoids users spamming messages to get a response
 
         restrictions = ['https','http','<','>'] #so anything that mentions channels, has links, or has emojis wont get sent to api
@@ -94,34 +79,28 @@ class ChatbotCog(commands.Cog):
         
         self.last_user_id = msg.author.id
 
-        traits = ['honest','deep','humble','amusing','circumspect','restrained','selfish','apathetic','naive','Individualistic','Reliable','Felicific','Fraudulent','Frightening','Mawkish','Dry','Emotional','Busy']
-        
-        prompt = f"""
-        The following is a conversation between two people. The other person is {','.join(random.sample(traits,k=3))}.
-        {msg.author.display_name}: What do you do?
-        Person#2: I reply with comments to messages.
-        {msg.author.display_name}: {msg.content}
-        Person#2:
-        """
+        messages = await msg.channel.history(limit=20).flatten()
+        msgs = [{"role": "system", "content": "Pretend you're in a conversation circle chiming in at the perfect moment."}]
+        for m in messages:
+            if not m.content: continue
+            msgs.append({"role": "user", "content": f"{m.clean_content}"})
 
         if randint(1,25) == 1:
-            r = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt,
-            max_tokens = 50,
-            temperature = 0.9
+            r = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages = msgs
             )
 
-            response_text = r['choices'][0]['text']
+            response_text = r['choices'][0]['message']['content']
 
             output_label = self.get_filter_label(response_text)
             if output_label == 2: 
                 print("Prompt was too toxic")
                 return
 
-            estimated_cost = r['usage']['total_tokens'] * (4/1000)
+            estimated_cost = (r['usage']['completion_tokens'] * (3/1000)) + (r['usage']['prompt_tokens'] * (6/1000))
             print("cost ~ ¢", estimated_cost)
-            await msg.reply(response_text)
+            await msg.channel.send(response_text)
 
     # /short_story
     @commands.slash_command()
