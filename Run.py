@@ -20,10 +20,15 @@ intents.message_content = True
 
 commands_sync_flags = commands.CommandSyncFlags(sync_commands=True)
 
+# Gets the test guild if supplied in .env file
+# Commands will be registered as global commands if no test guild
+test_guild = os.getenv('TEST_GUILD')
+test_guild = [int(test_guild)] if test_guild else None
+
 #Define the bot
 bot = commands.InteractionBot(
     intents = intents,
-    test_guilds = [491700910712684554],
+    test_guilds = test_guild,
     command_sync_flags=commands_sync_flags
 )
 
